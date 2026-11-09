@@ -45,6 +45,38 @@ import java.util.regex.Pattern;
 class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     private final JsonMapper json = JsonMapper.builder().build();
 
+    @Test
+    void swaggerDocumentsApiAndUsesPublicPkceClient() throws Exception {
+        var ui = send(client(), "GET", "/swagger-ui/index.html", null, null, null);
+        assertEquals(200, ui.statusCode());
+        var callback = send(client(), "GET", "/swagger-ui/oauth2-redirect.html", null, null, null);
+        assertEquals(200, callback.statusCode());
+        var spec = send(client(), "GET", "/v3/api-docs", null, null, null);
+        assertEquals(200, spec.statusCode());
+        var document = tree(spec);
+        assertTrue(document.get("paths").has("/api/users"));
+        assertTrue(document.get("paths").has("/api/me"));
+        assertEquals(
+                0,
+                document.get("paths").get("/api/auth/register").get("post").get("security").size());
+        assertTrue(document.get("components").get("securitySchemes").has("iamOAuth"));
+        var registered =
+                bean(org.springframework.security.oauth2.server.authorization.client
+                                .RegisteredClientRepository.class)
+                        .findByClientId("iam-swagger");
+        assertNotNull(registered);
+        assertNull(registered.getClientSecret());
+        assertTrue(registered.getClientSettings().isRequireProofKey());
+        assertTrue(registered.getClientSettings().isRequireAuthorizationConsent());
+        assertTrue(
+                registered
+                        .getClientAuthenticationMethods()
+                        .contains(
+                                org.springframework.security.oauth2.core.ClientAuthenticationMethod
+                                        .NONE));
+        assertEquals(401, send(client(), "GET", "/api/users", null, null, null).statusCode());
+    }
+
     private String origin() {
         return "http://127.0.0.1:" + context.getEnvironment().getProperty("local.server.port");
     }
@@ -57,7 +89,12 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     }
 
     private HttpResponse<String> send(
-            HttpClient client, String method, String path, String body, String token, String contentType)
+            HttpClient client,
+            String method,
+            String path,
+            String body,
+            String token,
+            String contentType)
             throws Exception {
         var builder =
                 HttpRequest.newBuilder(URI.create(path.startsWith("http") ? path : origin() + path))
@@ -69,12 +106,15 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
             builder.header("Content-Type", contentType);
         }
         builder.method(
-                method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
+                method,
+                body == null
+                        ? HttpRequest.BodyPublishers.noBody()
+                        : HttpRequest.BodyPublishers.ofString(body));
         return client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private HttpResponse<String> api(String method, String path, Object body, String token, int expected)
-            throws Exception {
+    private HttpResponse<String> api(
+            String method, String path, Object body, String token, int expected) throws Exception {
         var response =
                 send(
                         client(),
@@ -83,7 +123,10 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         body == null ? null : json.writeValueAsString(body),
                         token,
                         "application/json");
-        assertEquals(expected, response.statusCode(), () -> method + " " + path + ": " + response.body());
+        assertEquals(
+                expected,
+                response.statusCode(),
+                () -> method + " " + path + ": " + response.body());
         return response;
     }
 
@@ -113,7 +156,9 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         .claim("scope", "openid profile email")
                         .claim("authorities", new ArrayList<>(permissions))
                         .build();
-        return encoder.encode(JwtEncoderParameters.from(JwsHeader.with(SignatureAlgorithm.RS256).build(), claims))
+        return encoder.encode(
+                        JwtEncoderParameters.from(
+                                JwsHeader.with(SignatureAlgorithm.RS256).build(), claims))
                 .getTokenValue();
     }
 
@@ -137,7 +182,14 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         browser,
                         "POST",
                         "/login",
-                        form(Map.of("username", user.username(), "password", PASSWORD, "_csrf", csrf(page.body()))),
+                        form(
+                                Map.of(
+                                        "username",
+                                        user.username(),
+                                        "password",
+                                        PASSWORD,
+                                        "_csrf",
+                                        csrf(page.body()))),
                         null,
                         "application/x-www-form-urlencoded");
         assertEquals(302, response.statusCode(), response.body());
@@ -177,12 +229,19 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         api(
                                 "POST",
                                 "/api/permissions",
-                                Map.of("resource", unique(), "action", "read", "description", "Read reports"),
+                                Map.of(
+                                        "resource",
+                                        unique(),
+                                        "action",
+                                        "read",
+                                        "description",
+                                        "Read reports"),
                                 admin,
                                 201));
         String pid = p.get("uuid").asText();
         api("GET", "/api/permissions/" + pid, null, admin, 200);
-        var page = tree(api("GET", "/api/permissions?page=0&size=2&sort=name,asc", null, admin, 200));
+        var page =
+                tree(api("GET", "/api/permissions?page=0&size=2&sort=name,asc", null, admin, 200));
         assertTrue(page.has("content"));
         assertEquals(2, page.get("page").get("size").asInt());
         api("PATCH", "/api/permissions/" + pid, Map.of("description", "Updated"), admin, 200);
@@ -256,7 +315,12 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                 admin,
                 204);
         api("GET", "/api/users/" + uid + "/authorities", null, admin, 200);
-        api("DELETE", "/api/users/" + uid + "/roles/" + rid, Map.of("reason", "Remove role"), admin, 204);
+        api(
+                "DELETE",
+                "/api/users/" + uid + "/roles/" + rid,
+                Map.of("reason", "Remove role"),
+                admin,
+                204);
         api(
                 "POST",
                 "/api/users/" + uid + "/roles",
@@ -269,11 +333,18 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                 Map.of("permissionUuids", List.of(pid), "effect", "DENY", "reason", "Restricted"),
                 admin,
                 200);
-        api("DELETE", "/api/users/" + uid + "/permissions/" + pid, Map.of("reason", "Remove override"), admin, 204);
+        api(
+                "DELETE",
+                "/api/users/" + uid + "/permissions/" + pid,
+                Map.of("reason", "Remove override"),
+                admin,
+                204);
         api("GET", "/api/users/" + uid + "/identities", null, admin, 200);
         var linked =
                 bean(LinkIdentityUseCase.class)
-                        .execute(UUID.fromString(uid), identity(IdentityProvider.GITHUB, unique(), null));
+                        .execute(
+                                UUID.fromString(uid),
+                                identity(IdentityProvider.GITHUB, unique(), null));
         api("DELETE", "/api/users/" + uid + "/identities/" + linked.uuid(), null, admin, 204);
         String own = token(UUID.fromString(uid), List.of());
         api("GET", "/api/me", null, own, 200);
@@ -281,15 +352,28 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         api(
                 "PUT",
                 "/api/me/password",
-                Map.of("currentPassword", "N3w!Pass2026", "newPassword", PASSWORD, "confirmPassword", PASSWORD),
+                Map.of(
+                        "currentPassword",
+                        "N3w!Pass2026",
+                        "newPassword",
+                        PASSWORD,
+                        "confirmPassword",
+                        PASSWORD),
                 own,
                 204);
         api("GET", "/api/me/identities", null, own, 200);
         var selfLinked =
                 bean(LinkIdentityUseCase.class)
-                        .execute(UUID.fromString(uid), identity(IdentityProvider.GOOGLE, unique(), null));
+                        .execute(
+                                UUID.fromString(uid),
+                                identity(IdentityProvider.GOOGLE, unique(), null));
         api("DELETE", "/api/me/identities/" + selfLinked.uuid(), null, own, 204);
-        api("DELETE", "/api/roles/" + rid + "/permissions/" + pid, Map.of("reason", "Remove permission"), admin, 204);
+        api(
+                "DELETE",
+                "/api/roles/" + rid + "/permissions/" + pid,
+                Map.of("reason", "Remove permission"),
+                admin,
+                204);
         api("DELETE", "/api/users/" + uid, null, admin, 204);
         api("DELETE", "/api/roles/" + rid, null, admin, 204);
         api("DELETE", "/api/permissions/" + pid, null, admin, 204);
@@ -298,17 +382,34 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     @Test
     void malformedForbiddenAndUnauthenticatedRequestsUseProblemDetails() throws Exception {
         var unauth = api("GET", "/api/users", null, null, 401);
-        assertTrue(unauth.headers().firstValue("Content-Type").orElse("").contains("application/problem+json"));
+        assertTrue(
+                unauth.headers()
+                        .firstValue("Content-Type")
+                        .orElse("")
+                        .contains("application/problem+json"));
         assertEquals(401, tree(unauth).get("status").asInt());
         String own = token(register().uuid(), List.of("ROLE_ADMIN"));
         api("GET", "/api/users", null, own, 403);
-        var invalid = api("POST", "/api/auth/register", Map.of("email", "bad", "password", "hidden-secret"), null, 400);
+        var invalid =
+                api(
+                        "POST",
+                        "/api/auth/register",
+                        Map.of("email", "bad", "password", "hidden-secret"),
+                        null,
+                        400);
         assertTrue(tree(invalid).has("errors"));
         assertFalse(invalid.body().contains("hidden-secret"));
         api("GET", "/api/users/not-a-uuid", null, adminToken(), 400);
         api("GET", "/api/roles?size=10000", null, adminToken(), 400);
         api("GET", "/api/users/" + UUID.randomUUID(), null, adminToken(), 404);
-        var bad = send(client(), "GET", "/api/me", null, own.substring(0, own.length() - 10) + "badbadbad!", null);
+        var bad =
+                send(
+                        client(),
+                        "GET",
+                        "/api/me",
+                        null,
+                        own.substring(0, own.length() - 10) + "badbadbad!",
+                        null);
         assertEquals(401, bad.statusCode());
     }
 
@@ -323,8 +424,17 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         assertTrue(khmer.body().contains("lang=\"km\""));
         assertTrue(khmer.body().contains("ចូលគណនី"));
         var missingCsrf =
-                send(browser, "POST", "/register", "username=no-csrf", null, "application/x-www-form-urlencoded");
-        assertEquals(403, missingCsrf.statusCode(), missingCsrf.headers().map().toString() + missingCsrf.body());
+                send(
+                        browser,
+                        "POST",
+                        "/register",
+                        "username=no-csrf",
+                        null,
+                        "application/x-www-form-urlencoded");
+        assertEquals(
+                403,
+                missingCsrf.statusCode(),
+                missingCsrf.headers().map().toString() + missingCsrf.body());
         var invalid =
                 send(
                         browser,
@@ -349,7 +459,13 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         assertFalse(invalid.body().contains("value=\"short\""));
         var user = register();
         browser = login(user);
-        for (String route : List.of("/", "/profile/edit", "/profile/password", "/profile/accounts", "/profile/apps")) {
+        for (String route :
+                List.of(
+                        "/",
+                        "/profile/edit",
+                        "/profile/password",
+                        "/profile/accounts",
+                        "/profile/apps")) {
             var page = send(browser, "GET", route, null, null, null);
             assertEquals(200, page.statusCode(), () -> route + ": " + page.body());
             assertFalse(page.body().contains("passwordHash"));
@@ -383,7 +499,8 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     @Test
     void fourSocialProvidersStartWithStateAndSupportedProvidersUsePkce() throws Exception {
         for (String provider : List.of("google", "github", "facebook", "telegram")) {
-            var response = send(client(), "GET", "/oauth2/authorization/" + provider, null, null, null);
+            var response =
+                    send(client(), "GET", "/oauth2/authorization/" + provider, null, null, null);
             assertEquals(302, response.statusCode(), response.body());
             String location = response.headers().firstValue("Location").orElseThrow();
             assertTrue(location.contains("state="), provider);
@@ -395,7 +512,11 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     }
 
     private record Grant(
-            HttpClient browser, String accessToken, String refreshToken, JsonNode idClaims, UserResult user) {}
+            HttpClient browser,
+            String accessToken,
+            String refreshToken,
+            JsonNode idClaims,
+            UserResult user) {}
 
     private Grant authorizationCodeGrant() throws Exception {
         var user = register();
@@ -403,7 +524,8 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         String verifier =
                 Base64.getUrlEncoder()
                         .withoutPadding()
-                        .encodeToString(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
+                        .encodeToString(
+                                UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
         String challenge =
                 Base64.getUrlEncoder()
                         .withoutPadding()
@@ -426,7 +548,14 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         String body =
                 form(Map.of("client_id", "iam-web-client", "state", query(location).get("state")))
                         + "&scope=profile&scope=email&scope=phone&scope=address";
-        var allowed = send(browser, "POST", "/oauth2/authorize", body, null, "application/x-www-form-urlencoded");
+        var allowed =
+                send(
+                        browser,
+                        "POST",
+                        "/oauth2/authorize",
+                        body,
+                        null,
+                        "application/x-www-form-urlencoded");
         assertEquals(302, allowed.statusCode(), allowed.body());
         String callback = allowed.headers().firstValue("Location").orElseThrow();
         assertTrue(query(callback).containsKey("code"), callback);
@@ -456,7 +585,8 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                 user);
     }
 
-    private HttpResponse<String> basicPost(String path, String body, String id, String secret) throws Exception {
+    private HttpResponse<String> basicPost(String path, String body, String id, String secret)
+            throws Exception {
         return client().send(
                         HttpRequest.newBuilder(URI.create(origin() + path))
                                 .header(
@@ -464,7 +594,10 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                                         "Basic "
                                                 + Base64.getEncoder()
                                                         .encodeToString(
-                                                                (id + ":" + secret).getBytes(StandardCharsets.UTF_8)))
+                                                                (id + ":" + secret)
+                                                                        .getBytes(
+                                                                                StandardCharsets
+                                                                                        .UTF_8)))
                                 .header("Content-Type", "application/x-www-form-urlencoded")
                                 .POST(HttpRequest.BodyPublishers.ofString(body))
                                 .build(),
@@ -500,8 +633,16 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         assertEquals(200, apps.statusCode(), apps.body());
         String clientId =
                 jdbc.queryForObject(
-                        "select id from oauth2_registered_client where client_id='iam-web-client'", String.class);
-        var confirmation = send(grant.browser(), "GET", "/profile/apps/" + clientId + "/revoke", null, null, null);
+                        "select id from oauth2_registered_client where client_id='iam-web-client'",
+                        String.class);
+        var confirmation =
+                send(
+                        grant.browser(),
+                        "GET",
+                        "/profile/apps/" + clientId + "/revoke",
+                        null,
+                        null,
+                        null);
         assertEquals(200, confirmation.statusCode(), confirmation.body());
         var revoked =
                 send(
@@ -515,7 +656,12 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         var refresh =
                 basicPost(
                         "/oauth2/token",
-                        form(Map.of("grant_type", "refresh_token", "refresh_token", grant.refreshToken())),
+                        form(
+                                Map.of(
+                                        "grant_type",
+                                        "refresh_token",
+                                        "refresh_token",
+                                        grant.refreshToken())),
                         "iam-web-client",
                         "test-client-secret");
         assertEquals(400, refresh.statusCode(), refresh.body());
@@ -557,14 +703,27 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         var result = tree(registered);
         assertTrue(result.has("client_secret"));
         assertTrue(result.has("registration_access_token"));
-        String registrationPath = "/connect/register?client_id=" + encode(result.get("client_id").asText());
+        String registrationPath =
+                "/connect/register?client_id=" + encode(result.get("client_id").asText());
         var read =
-                send(client(), "GET", registrationPath, null, result.get("registration_access_token").asText(), null);
+                send(
+                        client(),
+                        "GET",
+                        registrationPath,
+                        null,
+                        result.get("registration_access_token").asText(),
+                        null);
         assertEquals(200, read.statusCode(), read.body());
         assertFalse(tree(read).has("client_secret"));
         assertEquals(
                 401,
-                send(client(), "POST", "/connect/register", json.writeValueAsString(request), null, "application/json")
+                send(
+                                client(),
+                                "POST",
+                                "/connect/register",
+                                json.writeValueAsString(request),
+                                null,
+                                "application/json")
                         .statusCode());
         var fresh =
                 basicPost(
@@ -588,7 +747,9 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     }
 
     @Test
-    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "iam.browser.checks", matches = "true")
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(
+            named = "iam.browser.checks",
+            matches = "true")
     void realBrowserEnglishKhmerMobileAndAccountFlows() throws Exception {
         var root = java.nio.file.Path.of(System.getProperty("iam.project.root"));
         var process =
@@ -612,27 +773,39 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     void socialCallbackWithUnknownStateCannotProvisionAnAccount() throws Exception {
         Integer before = jdbc.queryForObject("select count(*) from users", Integer.class);
         var response =
-                send(client(), "GET", "/login/oauth2/code/google?code=untrusted&state=unknown", null, null, null);
+                send(
+                        client(),
+                        "GET",
+                        "/login/oauth2/code/google?code=untrusted&state=unknown",
+                        null,
+                        null,
+                        null);
         assertEquals(302, response.statusCode());
         assertTrue(response.headers().firstValue("Location").orElse("").contains("oauth2error"));
         assertEquals(before, jdbc.queryForObject("select count(*) from users", Integer.class));
     }
 
     @Test
-    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named = "iam.packaged.checks", matches = "true")
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(
+            named = "iam.packaged.checks",
+            matches = "true")
     void packagedJarRendersPrecompiledTemplatesOutsideTheSourceTree() throws Exception {
         var directory = java.nio.file.Files.createTempDirectory("iam-packaged-check-");
         var log = directory.resolve("application.log");
         var process =
                 new ProcessBuilder(
-                                java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                                java.nio.file.Path.of(
+                                                System.getProperty("java.home"), "bin", "java")
+                                        .toString(),
                                 "-jar",
                                 System.getProperty("iam.packaged.jar"),
                                 "--server.port=0",
                                 "--spring.datasource.url="
-                                        + context.getEnvironment().getProperty("spring.datasource.url"),
+                                        + context.getEnvironment()
+                                                .getProperty("spring.datasource.url"),
                                 "--spring.datasource.username="
-                                        + context.getEnvironment().getProperty("spring.datasource.username"),
+                                        + context.getEnvironment()
+                                                .getProperty("spring.datasource.username"),
                                 "--spring.datasource.password=",
                                 "--app.iam.clients.oidc.secret=test-client-secret",
                                 "--IAM_DCR_CLIENT_SECRET=test-dcr-secret",
@@ -644,7 +817,8 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         try {
             String port = null;
             for (int attempt = 0; attempt < 150 && process.isAlive(); attempt++) {
-                String output = java.nio.file.Files.exists(log) ? java.nio.file.Files.readString(log) : "";
+                String output =
+                        java.nio.file.Files.exists(log) ? java.nio.file.Files.readString(log) : "";
                 var matcher = Pattern.compile("Tomcat started on port ([0-9]+)").matcher(output);
                 if (matcher.find()) {
                     port = matcher.group(1);
@@ -655,7 +829,11 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
             assertNotNull(port, java.nio.file.Files.readString(log));
             var response =
                     client().send(
-                                    HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/login?lang=km"))
+                                    HttpRequest.newBuilder(
+                                                    URI.create(
+                                                            "http://127.0.0.1:"
+                                                                    + port
+                                                                    + "/login?lang=km"))
                                             .GET()
                                             .build(),
                                     HttpResponse.BodyHandlers.ofString());

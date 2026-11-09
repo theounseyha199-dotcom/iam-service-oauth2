@@ -120,6 +120,21 @@ there is no `@ManyToMany`.
 
 ## 4. API, OAuth and Postman
 
+### Swagger UI
+
+Open [http://localhost:9000/swagger-ui/index.html](http://localhost:9000/swagger-ui/index.html).
+Click **Authorize**, select the `iamOAuth` flow with `openid`, `profile`, and `email`,
+then sign in and approve consent. The preconfigured `iam-swagger` client uses PKCE;
+**no client secret is needed**. Use an administrator account for administrative APIs.
+Expand an operation, click **Try it out**, fill its fields and click **Execute**.
+Alternatively, paste an existing access token into the `bearerToken` authorization.
+The OpenAPI JSON is at `/v3/api-docs`. Public registration needs no token.
+Authorization is not persisted across page reloads. When using a different host or
+port, set `IAM_ISSUER` to that application's external URL before startup so the
+registered Swagger callback matches. Restart after adding this feature to seed
+its dedicated public client. API authentication and permission checks still apply.
+
+
 Import the collection and empty-secret environment under [postman](postman/README.md).
 There are 51 requests including REST routes and OAuth/OIDC/DCR helpers.
 
