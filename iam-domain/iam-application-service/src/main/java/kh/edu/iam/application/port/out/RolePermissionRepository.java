@@ -15,21 +15,11 @@ public interface RolePermissionRepository {
 
     Optional<Permission> lockPermission(UUID permissionUuid);
 
-    List<RolePermission> findActiveByRoleId(
-            Long roleId,
-            Instant now
-    );
+    List<RolePermission> findActiveByRoleId(Long roleId, Instant now);
 
     RolePermission insert(RolePermission assignment);
 
-    void saveRevocation(
-            RolePermission assignment,
-            String revocationReason
-    );
+    void saveRevocation(RolePermission assignment, String revocationReason);
 
-    Optional<RolePermission> findUnrevokedForUpdate(
-            Long roleId,
-            UUID permissionUuid,
-            Instant now
-    );
+    Optional<RolePermission> findUnrevokedForUpdate(Long roleId, UUID permissionUuid, Instant now);
 }

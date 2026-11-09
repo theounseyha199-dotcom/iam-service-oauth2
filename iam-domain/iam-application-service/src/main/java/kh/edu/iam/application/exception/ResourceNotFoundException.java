@@ -1,7 +1,7 @@
 package kh.edu.iam.application.exception;
 
-public class ResourceNotFoundException  extends RuntimeException{
+public final class ResourceNotFoundException extends ApplicationException {
     public ResourceNotFoundException(String message) {
-        super(message);
+        super("not_found", message);
     }
 }

@@ -1,6 +1,13 @@
 package kh.edu.iam.persistence.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,12 +34,7 @@ public class RolePermissionEntity {
     @Column(name = "assigned_at", nullable = false, updatable = false)
     private Instant assignedAt;
 
-    @Column(
-            name = "assigned_by",
-            nullable = false,
-            updatable = false,
-            length = 100
-    )
+    @Column(name = "assigned_by", nullable = false, updatable = false, length = 100)
     private String assignedBy;
 
     @Column(name = "expires_at", updatable = false)
@@ -49,4 +51,8 @@ public class RolePermissionEntity {
 
     @Column(name = "revocation_reason", length = 255)
     private String revocationReason;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 }

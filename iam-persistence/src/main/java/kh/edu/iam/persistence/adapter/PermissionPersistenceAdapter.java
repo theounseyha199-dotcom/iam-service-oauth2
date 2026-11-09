@@ -1,6 +1,5 @@
 package kh.edu.iam.persistence.adapter;
 
-
 import kh.edu.iam.Permission;
 import kh.edu.iam.application.common.PageResult;
 import kh.edu.iam.application.exception.DuplicateResourceException;
@@ -9,6 +8,7 @@ import kh.edu.iam.application.port.out.PermissionRepository;
 import kh.edu.iam.persistence.entity.PermissionEntity;
 import kh.edu.iam.persistence.mapper.PermissionPersistenceMapper;
 import kh.edu.iam.persistence.repository.PermissionJpaRepository;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -16,8 +16,8 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -26,9 +26,7 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
 
     private final PermissionJpaRepository repository;
 
-    public PermissionPersistenceAdapter(
-            PermissionJpaRepository repository
-    ) {
+    public PermissionPersistenceAdapter(PermissionJpaRepository repository) {
         this.repository = repository;
     }
 
@@ -40,25 +38,17 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
         if (permission.getId() == null) {
             entity = PermissionPersistenceMapper.toNewEntity(permission);
         } else {
-            entity = repository.findById(permission.getId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Permission no longer exists"
-                    ));
+            entity =
+                    repository
+                            .findById(permission.getId())
+                            .orElseThrow(() -> new IllegalStateException("Permission no longer exists"));
 
             if (!Objects.equals(entity.getUuid(), permission.getUuid())) {
-                throw new IllegalArgumentException(
-                        "Permission ID and UUID do not match"
-                );
+                throw new IllegalArgumentException("Permission ID and UUID do not match");
             }
 
-            if (!Objects.equals(
-                    entity.getVersion(),
-                    permission.getAudit().version()
-            )) {
-                throw new ObjectOptimisticLockingFailureException(
-                        PermissionEntity.class,
-                        permission.getId()
-                );
+            if (!Objects.equals(entity.getVersion(), permission.getAudit().version())) {
+                throw new ObjectOptimisticLockingFailureException(PermissionEntity.class, permission.getId());
             }
 
             PermissionPersistenceMapper.applyChanges(permission, entity);
@@ -70,9 +60,7 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
         } catch (DataIntegrityViolationException exception) {
             // Translate only the known unique-name constraint.
             if (isNameConflict(exception)) {
-                throw new DuplicateResourceException(
-                        "Permission already exists: " + permission.getName()
-                );
+                throw new DuplicateResourceException("Permission already exists: " + permission.getName());
             }
 
             throw exception;
@@ -81,8 +69,7 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
 
     @Override
     public Optional<Permission> findByUuid(UUID uuid) {
-        return repository.findByUuidAndDeletedFalse(uuid)
-                .map(PermissionPersistenceMapper::toDomain);
+        return repository.findByUuidAndDeletedFalse(uuid).map(PermissionPersistenceMapper::toDomain);
     }
 
     @Override
@@ -94,11 +81,8 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
         Throwable current = exception;
 
         while (current != null) {
-            if (current instanceof
-                    org.hibernate.exception.ConstraintViolationException violation) {
-                return "uk_permissions_name".equals(
-                        violation.getConstraintName()
-                );
+            if (current instanceof org.hibernate.exception.ConstraintViolationException violation) {
+                return "uk_permissions_name".equals(violation.getConstraintName());
             }
 
             current = current.getCause();
@@ -107,36 +91,26 @@ public class PermissionPersistenceAdapter implements PermissionRepository {
         return false;
     }
 
-
     @Override
     public PageResult<Permission> findAll(PermissionFilterQuery query) {
-        Sort.Direction direction = query.descending()
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
+        Sort.Direction direction = query.descending() ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Sort sort = Sort.by(direction, query.sortBy())
-                .and(Sort.by("id"));
+        Sort sort = Sort.by(direction, query.sortBy()).and(Sort.by("id"));
 
-        var pageable = PageRequest.of(
-                query.page(),
-                query.size(),
-                sort
-        );
+        var pageable = PageRequest.of(query.page(), query.size(), sort);
 
-        var page = repository.search(
-                query.search(),
-                query.active(),
-                pageable
-        );
+        var page = repository.search(query.search(), query.active(), query.resource(), query.action(), pageable);
 
         return new PageResult<>(
-                page.getContent().stream()
-                        .map(PermissionPersistenceMapper::toDomain)
-                        .toList(),
+                page.getContent().stream().map(PermissionPersistenceMapper::toDomain).toList(),
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalElements(),
-                page.getTotalPages()
-        );
+                page.getTotalPages());
+    }
+
+    @Override
+    public Optional<kh.edu.iam.Permission> findById(Long id) {
+        return repository.findById(id).map(PermissionPersistenceMapper::toDomain);
     }
 }

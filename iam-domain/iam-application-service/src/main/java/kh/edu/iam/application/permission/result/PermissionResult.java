@@ -1,12 +1,11 @@
 package kh.edu.iam.application.permission.result;
 
 import kh.edu.iam.Permission;
-import kh.edu.iam.application.port.out.CurrentActorProvider;
 
 import java.time.Instant;
 import java.util.UUID;
 
-public record PermissionResult (
+public record PermissionResult(
         UUID uuid,
         String name,
         String resource,
@@ -16,8 +15,7 @@ public record PermissionResult (
         boolean active,
         Instant createdAt,
         Instant updatedAt,
-        long version
-){
+        long version) {
 
     public static PermissionResult from(Permission permission) {
         return new PermissionResult(
@@ -30,7 +28,6 @@ public record PermissionResult (
                 permission.isActive(),
                 permission.getAudit().createdAt(),
                 permission.getAudit().updatedAt(),
-                permission.getAudit().version()
-        );
+                permission.getAudit().version());
     }
 }

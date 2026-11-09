@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
- api project(':iam-domain:iam-domain-core')
+    api project(':iam-domain:iam-domain-core')
 
 }
 

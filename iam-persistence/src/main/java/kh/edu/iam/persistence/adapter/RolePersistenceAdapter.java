@@ -8,6 +8,7 @@ import kh.edu.iam.application.role.query.RoleFilterQuery;
 import kh.edu.iam.persistence.entity.RoleEntity;
 import kh.edu.iam.persistence.mapper.RolePersistenceMapper;
 import kh.edu.iam.persistence.repository.RoleJpaRepository;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -39,25 +40,17 @@ public class RolePersistenceAdapter implements RoleRepository {
         if (role.getId() == null) {
             entity = RolePersistenceMapper.toNewEntity(role);
         } else {
-            entity = repository.findById(role.getId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Role no longer exists"
-                    ));
+            entity =
+                    repository
+                            .findById(role.getId())
+                            .orElseThrow(() -> new IllegalStateException("Role no longer exists"));
 
             if (!Objects.equals(entity.getUuid(), role.getUuid())) {
-                throw new IllegalArgumentException(
-                        "Role ID and UUID do not match"
-                );
+                throw new IllegalArgumentException("Role ID and UUID do not match");
             }
 
-            if (!Objects.equals(
-                    entity.getVersion(),
-                    role.getAudit().version()
-            )) {
-                throw new ObjectOptimisticLockingFailureException(
-                        RoleEntity.class,
-                        role.getId()
-                );
+            if (!Objects.equals(entity.getVersion(), role.getAudit().version())) {
+                throw new ObjectOptimisticLockingFailureException(RoleEntity.class, role.getId());
             }
 
             RolePersistenceMapper.applyChanges(role, entity);
@@ -68,9 +61,7 @@ public class RolePersistenceAdapter implements RoleRepository {
             return RolePersistenceMapper.toDomain(saved);
         } catch (DataIntegrityViolationException exception) {
             if (isNameConflict(exception)) {
-                throw new DuplicateResourceException(
-                        "Role already exists: " + role.getName()
-                );
+                throw new DuplicateResourceException("Role already exists: " + role.getName());
             }
 
             throw exception;
@@ -79,8 +70,7 @@ public class RolePersistenceAdapter implements RoleRepository {
 
     @Override
     public Optional<Role> findByUuid(UUID uuid) {
-        return repository.findByUuidAndDeletedFalse(uuid)
-                .map(RolePersistenceMapper::toDomain);
+        return repository.findByUuidAndDeletedFalse(uuid).map(RolePersistenceMapper::toDomain);
     }
 
     @Override
@@ -92,11 +82,8 @@ public class RolePersistenceAdapter implements RoleRepository {
         Throwable current = exception;
 
         while (current != null) {
-            if (current instanceof
-                    org.hibernate.exception.ConstraintViolationException violation) {
-                return "uk_roles_name".equals(
-                        violation.getConstraintName()
-                );
+            if (current instanceof org.hibernate.exception.ConstraintViolationException violation) {
+                return "uk_roles_name".equals(violation.getConstraintName());
             }
 
             current = current.getCause();
@@ -109,33 +96,29 @@ public class RolePersistenceAdapter implements RoleRepository {
     public PageResult<Role> findAll(RoleFilterQuery query) {
         Objects.requireNonNull(query, "query is required");
 
-        Sort.Direction direction = query.descending()
-                ? Sort.Direction.DESC
-                : Sort.Direction.ASC;
+        Sort.Direction direction = query.descending() ? Sort.Direction.DESC : Sort.Direction.ASC;
 
-        Sort sort = Sort.by(direction, query.sortBy())
-                .and(Sort.by("id"));
+        Sort sort = Sort.by(direction, query.sortBy()).and(Sort.by("id"));
 
-        var pageable = PageRequest.of(
-                query.page(),
-                query.size(),
-                sort
-        );
+        var pageable = PageRequest.of(query.page(), query.size(), sort);
 
-        var page = repository.search(
-                query.search(),
-                query.active(),
-                pageable
-        );
+        var page = repository.search(query.search(), query.active(), pageable);
 
         return new PageResult<>(
-                page.getContent().stream()
-                        .map(RolePersistenceMapper::toDomain)
-                        .toList(),
+                page.getContent().stream().map(RolePersistenceMapper::toDomain).toList(),
                 page.getNumber(),
                 page.getSize(),
                 page.getTotalElements(),
-                page.getTotalPages()
-        );
+                page.getTotalPages());
+    }
 
-    }}
+    @Override
+    public Optional<kh.edu.iam.Role> findById(Long id) {
+        return repository.findById(id).map(RolePersistenceMapper::toDomain);
+    }
+
+    @Override
+    public Optional<kh.edu.iam.Role> findByName(String name) {
+        return repository.findByNameAndDeletedFalse(name).map(RolePersistenceMapper::toDomain);
+    }
+}

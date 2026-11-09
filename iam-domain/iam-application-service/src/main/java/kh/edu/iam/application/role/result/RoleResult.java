@@ -13,8 +13,7 @@ public record RoleResult(
         boolean active,
         Instant createdAt,
         Instant updatedAt,
-        long version
-) {
+        long version) {
 
     public static RoleResult from(Role role) {
         return new RoleResult(
@@ -25,7 +24,6 @@ public record RoleResult(
                 role.isActive(),
                 role.getAudit().createdAt(),
                 role.getAudit().updatedAt(),
-                role.getAudit().version()
-        );
+                role.getAudit().version());
     }
 }

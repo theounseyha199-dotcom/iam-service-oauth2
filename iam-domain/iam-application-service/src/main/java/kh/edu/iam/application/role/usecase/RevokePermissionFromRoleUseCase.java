@@ -4,6 +4,7 @@ import kh.edu.iam.application.exception.ResourceNotFoundException;
 import kh.edu.iam.application.port.out.CurrentActorProvider;
 import kh.edu.iam.application.port.out.RolePermissionRepository;
 import kh.edu.iam.application.port.out.TransactionRunner;
+
 import lombok.RequiredArgsConstructor;
 
 import java.time.Clock;
@@ -18,53 +19,40 @@ public final class RevokePermissionFromRoleUseCase {
     private final TransactionRunner transactions;
     private final Clock clock;
 
-    public void execute(
-            UUID roleUuid,
-            UUID permissionUuid,
-            String reason
-    ) {
+    public void execute(UUID roleUuid, UUID permissionUuid, String reason) {
         Objects.requireNonNull(roleUuid, "roleUuid is required");
-        Objects.requireNonNull(
-                permissionUuid,
-                "permissionUuid is required"
-        );
+        Objects.requireNonNull(permissionUuid, "permissionUuid is required");
 
         if (reason != null && reason.length() > 255) {
-            throw new IllegalArgumentException(
-                    "reason cannot exceed 255 characters"
-            );
+            throw new IllegalArgumentException("reason cannot exceed 255 characters");
         }
 
-        transactions.required(() -> {
-            var role = repository.lockRole(roleUuid)
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Role not found: " + roleUuid
-                    ));
+        transactions.required(
+                () -> {
+                    var role =
+                            repository
+                                    .lockRole(roleUuid)
+                                    .orElseThrow(() -> new ResourceNotFoundException("Role not found: " + roleUuid));
 
-            if (role.isSystem()) {
-                throw new IllegalStateException(
-                        "System role permissions cannot be changed"
-                );
-            }
+                    if (role.isSystem()) {
+                        throw new IllegalStateException("System role permissions cannot be changed");
+                    }
 
-            var now = clock.instant();
+                    var now = clock.instant();
 
-            var assignment = repository.findUnrevokedForUpdate(
-                    role.getId(),
-                    permissionUuid,
-                    now
-            ).orElseThrow(() -> new ResourceNotFoundException(
-                    "No active permission assignment was found"
-            ));
+                    var assignment =
+                            repository
+                                    .findUnrevokedForUpdate(role.getId(), permissionUuid, now)
+                                    .orElseThrow(
+                                            () ->
+                                                    new ResourceNotFoundException(
+                                                            "No active permission assignment was found"));
 
-            assignment.revoke(
-                    actorProvider.currentActor(),
-                    now
-            );
+                    assignment.revoke(actorProvider.currentActor(), now);
 
-            repository.saveRevocation(assignment, reason);
+                    repository.saveRevocation(assignment, reason);
 
-            return null;
-        });
+                    return null;
+                });
     }
 }

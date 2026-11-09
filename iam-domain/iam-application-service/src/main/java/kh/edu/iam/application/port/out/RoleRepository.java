@@ -9,6 +9,10 @@ import java.util.UUID;
 
 public interface RoleRepository {
 
+    Optional<Role> findById(Long id);
+
+    Optional<Role> findByName(String name);
+
     Role save(Role role);
 
     Optional<Role> findByUuid(UUID uuid);

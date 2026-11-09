@@ -10,7 +10,9 @@ import kh.edu.iam.persistence.mapper.RolePersistenceMapper;
 import kh.edu.iam.persistence.repository.PermissionJpaRepository;
 import kh.edu.iam.persistence.repository.RoleJpaRepository;
 import kh.edu.iam.persistence.repository.RolePermissionJpaRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +25,7 @@ import java.util.UUID;
 @Repository
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.MANDATORY)
-public class RolePermissionPersistenceAdapter
-        implements RolePermissionRepository {
+public class RolePermissionPersistenceAdapter implements RolePermissionRepository {
 
     private final RoleJpaRepository roleRepository;
     private final PermissionJpaRepository permissionRepository;
@@ -32,32 +33,24 @@ public class RolePermissionPersistenceAdapter
 
     @Override
     public Optional<Role> lockRole(UUID roleUuid) {
-        return roleRepository.findForUpdate(roleUuid)
-                .map(RolePersistenceMapper::toDomain);
+        return roleRepository.findForUpdate(roleUuid).map(RolePersistenceMapper::toDomain);
     }
 
     @Override
     public Optional<Permission> lockPermission(UUID permissionUuid) {
-        return permissionRepository.findForUpdate(permissionUuid)
-                .map(PermissionPersistenceMapper::toDomain);
+        return permissionRepository.findForUpdate(permissionUuid).map(PermissionPersistenceMapper::toDomain);
     }
 
     @Override
-    public List<RolePermission> findActiveByRoleId(
-            Long roleId,
-            Instant now
-    ) {
-        return assignmentRepository.findActiveByRoleId(roleId, now)
-                .stream()
+    public List<RolePermission> findActiveByRoleId(Long roleId, Instant now) {
+        return assignmentRepository.findActiveByRoleId(roleId, now).stream()
                 .map(RolePermissionPersistenceMapper::toDomain)
                 .toList();
     }
 
     @Override
     public RolePermission insert(RolePermission assignment) {
-        var entity = RolePermissionPersistenceMapper.toNewEntity(
-                assignment
-        );
+        var entity = RolePermissionPersistenceMapper.toNewEntity(assignment);
 
         var saved = assignmentRepository.saveAndFlush(entity);
 
@@ -65,65 +58,42 @@ public class RolePermissionPersistenceAdapter
     }
 
     @Override
-    public Optional<RolePermission> findUnrevokedForUpdate(
-            Long roleId,
-            UUID permissionUuid,
-            Instant now
-    ) {
-        var matches = assignmentRepository
-                .findUnrevokedForUpdate(roleId, permissionUuid)
-                .stream()
-                .map(RolePermissionPersistenceMapper::toDomain)
-                .filter(assignment -> assignment.isActiveAt(now))
-                .toList();
+    public Optional<RolePermission> findUnrevokedForUpdate(Long roleId, UUID permissionUuid, Instant now) {
+        var matches =
+                assignmentRepository.findUnrevokedForUpdate(roleId, permissionUuid).stream()
+                        .map(RolePermissionPersistenceMapper::toDomain)
+                        .filter(assignment -> assignment.isActiveAt(now))
+                        .toList();
 
         if (matches.size() > 1) {
-            throw new IllegalStateException(
-                    "Multiple active assignments exist for this role and permission"
-            );
+            throw new IllegalStateException("Multiple active assignments exist for this role and permission");
         }
 
         return matches.stream().findFirst();
     }
 
     @Override
-    public void saveRevocation(
-            RolePermission assignment,
-            String revocationReason
-    ) {
-        if (assignment.getId() == null
-                || assignment.getRevokedAt() == null
-                || assignment.getRevokedBy() == null) {
-            throw new IllegalArgumentException(
-                    "A persisted, revoked assignment is required"
-            );
+    public void saveRevocation(RolePermission assignment, String revocationReason) {
+        if (assignment.getId() == null || assignment.getRevokedAt() == null || assignment.getRevokedBy() == null) {
+            throw new IllegalArgumentException("A persisted, revoked assignment is required");
         }
 
         if (revocationReason != null && revocationReason.length() > 255) {
-            throw new IllegalArgumentException(
-                    "revocationReason cannot exceed 255 characters"
-            );
+            throw new IllegalArgumentException("revocationReason cannot exceed 255 characters");
         }
 
-        var entity = assignmentRepository
-                .findByIdForUpdate(assignment.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "Assignment no longer exists"
-                ));
+        var entity =
+                assignmentRepository
+                        .findByIdForUpdate(assignment.getId())
+                        .orElseThrow(() -> new IllegalStateException("Assignment no longer exists"));
 
         if (!entity.getRoleId().equals(assignment.getRoleId())
-                || !entity.getPermissionId().equals(
-                assignment.getPermissionId()
-        )) {
-            throw new IllegalArgumentException(
-                    "Assignment references do not match"
-            );
+                || !entity.getPermissionId().equals(assignment.getPermissionId())) {
+            throw new IllegalArgumentException("Assignment references do not match");
         }
 
         if (entity.getRevokedAt() != null) {
-            throw new IllegalStateException(
-                    "Assignment has already been revoked"
-            );
+            throw new IllegalStateException("Assignment has already been revoked");
         }
 
         entity.setRevokedAt(assignment.getRevokedAt());

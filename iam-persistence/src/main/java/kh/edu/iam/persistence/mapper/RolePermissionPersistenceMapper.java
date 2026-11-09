@@ -7,18 +7,13 @@ import java.util.Objects;
 
 public final class RolePermissionPersistenceMapper {
 
-    private RolePermissionPersistenceMapper() {
-    }
+    private RolePermissionPersistenceMapper() {}
 
-    public static RolePermissionEntity toNewEntity(
-            RolePermission assignment
-    ) {
+    public static RolePermissionEntity toNewEntity(RolePermission assignment) {
         Objects.requireNonNull(assignment, "assignment is required");
 
         if (assignment.getId() != null) {
-            throw new IllegalArgumentException(
-                    "A new assignment must not have an ID"
-            );
+            throw new IllegalArgumentException("A new assignment must not have an ID");
         }
 
         RolePermissionEntity entity = new RolePermissionEntity();
@@ -37,9 +32,7 @@ public final class RolePermissionPersistenceMapper {
         return entity;
     }
 
-    public static RolePermission toDomain(
-            RolePermissionEntity entity
-    ) {
+    public static RolePermission toDomain(RolePermissionEntity entity) {
         Objects.requireNonNull(entity, "entity is required");
 
         return new RolePermission(
@@ -51,7 +44,6 @@ public final class RolePermissionPersistenceMapper {
                 entity.getExpiresAt(),
                 entity.getRevokedAt(),
                 entity.getRevokedBy(),
-                entity.getReason()
-        );
+                entity.getReason());
     }
 }

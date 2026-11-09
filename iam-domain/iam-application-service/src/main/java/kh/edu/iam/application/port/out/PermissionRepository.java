@@ -9,6 +9,8 @@ import java.util.UUID;
 
 public interface PermissionRepository {
 
+    Optional<Permission> findById(Long id);
+
     Permission save(Permission permission);
 
     Optional<Permission> findByUuid(UUID uuid);

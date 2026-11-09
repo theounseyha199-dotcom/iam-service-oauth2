@@ -8,6 +8,7 @@ import kh.edu.iam.application.port.out.TransactionRunner;
 import kh.edu.iam.application.role.command.AssignPermissionsToRoleCommand;
 import kh.edu.iam.application.role.command.CreateRoleCommand;
 import kh.edu.iam.application.role.result.RoleResult;
+
 import lombok.RequiredArgsConstructor;
 
 import java.time.Clock;
@@ -29,17 +30,10 @@ public final class CreateRoleUseCase {
     }
 
     private RoleResult create(CreateRoleCommand command) {
-        var role = Role.create(
-                command.name(),
-                command.description(),
-                actorProvider.currentActor(),
-                clock.instant()
-        );
+        var role = Role.create(command.name(), command.description(), actorProvider.currentActor(), clock.instant());
 
         if (roleRepository.existsByName(role.getName())) {
-            throw new DuplicateResourceException(
-                    "Role already exists: " + role.getName()
-            );
+            throw new DuplicateResourceException("Role already exists: " + role.getName());
         }
 
         var savedRole = roleRepository.save(role);
@@ -50,9 +44,7 @@ public final class CreateRoleUseCase {
                             savedRole.getUuid(),
                             command.permissionUuids(),
                             null,
-                            "Initial permissions at role creation"
-                    )
-            );
+                            "Initial permissions at role creation"));
         }
 
         return RoleResult.from(savedRole);

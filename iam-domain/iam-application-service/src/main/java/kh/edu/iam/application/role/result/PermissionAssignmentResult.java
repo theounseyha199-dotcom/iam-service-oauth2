@@ -12,14 +12,9 @@ public record PermissionAssignmentResult(
         Instant assignedAt,
         String assignedBy,
         Instant expiresAt,
-        String reason
-) {
+        String reason) {
 
-    public static PermissionAssignmentResult from(
-            RolePermission assignment,
-            UUID roleUuid,
-            UUID permissionUuid
-    ) {
+    public static PermissionAssignmentResult from(RolePermission assignment, UUID roleUuid, UUID permissionUuid) {
         return new PermissionAssignmentResult(
                 assignment.getId(),
                 roleUuid,
@@ -27,7 +22,6 @@ public record PermissionAssignmentResult(
                 assignment.getAssignedAt(),
                 assignment.getAssignedBy(),
                 assignment.getExpiresAt(),
-                assignment.getReason()
-        );
+                assignment.getReason());
     }
 }

@@ -4,13 +4,10 @@ import kh.edu.iam.AuditMetadata;
 import kh.edu.iam.DeletionMetadata;
 import kh.edu.iam.Permission;
 import kh.edu.iam.persistence.entity.PermissionEntity;
-import lombok.RequiredArgsConstructor;
-
 
 public final class PermissionPersistenceMapper {
 
-    private PermissionPersistenceMapper() {
-    }
+    private PermissionPersistenceMapper() {}
 
     public static PermissionEntity toNewEntity(Permission permission) {
         PermissionEntity entity = new PermissionEntity();
@@ -30,10 +27,10 @@ public final class PermissionPersistenceMapper {
         return entity;
     }
 
-    public static void applyChanges(
-            Permission permission,
-            PermissionEntity entity
-    ) {
+    public static void applyChanges(Permission permission, PermissionEntity entity) {
+        entity.setName(permission.getName());
+        entity.setResource(permission.getResource());
+        entity.setAction(permission.getAction());
         entity.setDescription(permission.getDescription());
         entity.setActive(permission.isActive());
 
@@ -59,13 +56,7 @@ public final class PermissionPersistenceMapper {
                         entity.getCreatedBy(),
                         entity.getUpdatedAt(),
                         entity.getUpdatedBy(),
-                        entity.getVersion()
-                ),
-                new DeletionMetadata(
-                        entity.isDeleted(),
-                        entity.getDeletedBy(),
-                        entity.getDeletedAt()
-                )
-        );
+                        entity.getVersion()),
+                new DeletionMetadata(entity.isDeleted(), entity.getDeletedBy(), entity.getDeletedAt()));
     }
 }

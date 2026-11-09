@@ -7,8 +7,7 @@ import kh.edu.iam.persistence.entity.RoleEntity;
 
 public final class RolePersistenceMapper {
 
-    private RolePersistenceMapper() {
-    }
+    private RolePersistenceMapper() {}
 
     public static RoleEntity toNewEntity(Role role) {
         RoleEntity entity = new RoleEntity();
@@ -51,13 +50,7 @@ public final class RolePersistenceMapper {
                         entity.getCreatedBy(),
                         entity.getUpdatedAt(),
                         entity.getUpdatedBy(),
-                        entity.getVersion()
-                ),
-                new DeletionMetadata(
-                        entity.isDeleted(),
-                        entity.getDeletedBy(),
-                        entity.getDeletedAt()
-                )
-        );
+                        entity.getVersion()),
+                new DeletionMetadata(entity.isDeleted(), entity.getDeletedBy(), entity.getDeletedAt()));
     }
 }

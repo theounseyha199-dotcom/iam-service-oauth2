@@ -1,6 +1,13 @@
 package kh.edu.iam.persistence.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,12 +53,7 @@ public class RoleEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(
-            name = "created_by",
-            nullable = false,
-            updatable = false,
-            length = 100
-    )
+    @Column(name = "created_by", nullable = false, updatable = false, length = 100)
     private String createdBy;
 
     @Column(name = "updated_at", nullable = false)

@@ -1,6 +1,13 @@
 package kh.edu.iam.persistence.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,16 +26,16 @@ public class PermissionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, updatable = false)
+    @Column(nullable = false, unique = true)
     private UUID uuid;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 50, updatable = false)
+    @Column(nullable = false, length = 50)
     private String resource;
 
-    @Column(nullable = false, length = 50, updatable = false)
+    @Column(nullable = false, length = 50)
     private String action;
 
     @Column(length = 255)
@@ -49,15 +56,10 @@ public class PermissionEntity {
     @Column(name = "deleted_by", length = 100)
     private String deletedBy;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    @Column(
-            name = "created_by",
-            nullable = false,
-            updatable = false,
-            length = 100
-    )
+    @Column(name = "created_by", nullable = false, updatable = false, length = 100)
     private String createdBy;
 
     @Column(name = "updated_at", nullable = false)
@@ -69,9 +71,4 @@ public class PermissionEntity {
     @Version
     @Column(nullable = false)
     private Long version;
-
 }
-
-/*
-@Version lets JPA detect conflicting updates. Your domain model continues managing audit values.
- */

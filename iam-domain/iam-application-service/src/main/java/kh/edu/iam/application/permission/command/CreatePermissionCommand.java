@@ -1,11 +1,6 @@
 package kh.edu.iam.application.permission.command;
 
-public record CreatePermissionCommand(
-        String resource,
-        String action,
-        String description
-) {
-}
+public record CreatePermissionCommand(String resource, String action, String description) {}
 /**
  * /
  * The command carries input.
