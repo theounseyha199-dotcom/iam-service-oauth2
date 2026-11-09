@@ -1,0 +1,43 @@
+{
+  "verified_at_utc": "2026-11-09T14:39:18.016098+00:00",
+  "command": "./gradlew check :iam-main:bootJar -Ppart2Integration=true -PbrowserChecks=true -PpackagedChecks=true --offline --console=plain",
+  "suites": [
+    {
+      "name": "kh.edu.iam.AssignmentRulesTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.FullAssignmentIntegrationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.ProviderIdentityMapperTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.PartTwoIntegrationTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "tests": 34,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "browser_checks": 16,
+  "static_contracts": 13,
+  "ide_build": "passed",
+  "live_provider_account_acceptance": "manual; not claimed",
+  "normal_application_database": "not used by verification"
+}

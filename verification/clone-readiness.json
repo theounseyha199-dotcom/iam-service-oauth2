@@ -1,0 +1,38 @@
+{
+  "scope": "fresh-clone readiness review; source snapshot includes not-yet-committed deliverables",
+  "compose": "root compose.yaml configuration validated; new Docker database startup not executed",
+  "full_command": "./gradlew check :iam-main:bootJar -Ppart2Integration=true -PpackagedChecks=true --offline --console=plain",
+  "suites": [
+    {
+      "name": "co.istad.iam.FullAssignmentIntegrationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "1"
+    },
+    {
+      "name": "co.istad.iam.PartTwoIntegrationTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.ProviderIdentityMapperTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "kh.edu.iam.AssignmentRulesTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "private_configuration_required": false,
+  "browser_checks": "optional browser runner missing; excluded, one test skipped",
+  "untracked_files": 184
+}

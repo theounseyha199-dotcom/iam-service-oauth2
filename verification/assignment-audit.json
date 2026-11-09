@@ -1,0 +1,19 @@
+{
+  "passed": 13,
+  "total": 13,
+  "checks": {
+    "user_use_cases": true,
+    "role_use_cases": true,
+    "permission_use_cases": true,
+    "identity_use_cases": true,
+    "framework_free_inner_layers": true,
+    "no_many_to_many": true,
+    "seven_separate_entities": true,
+    "required_jte_pages": true,
+    "message_key_parity": true,
+    "39_rest_routes": true,
+    "postman_valid_json": true,
+    "postman_secrets_empty": true,
+    "environment_only_config": true
+  }
+}

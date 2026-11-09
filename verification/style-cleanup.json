@@ -1,0 +1,47 @@
+{
+  "java_files": 203,
+  "non_static_wildcard_imports": 0,
+  "configuration_classes": [
+    "ApplicationConfiguration.java",
+    "IdentityUseCaseConfiguration.java",
+    "PermissionUseCaseConfiguration.java",
+    "RoleUseCaseConfiguration.java",
+    "UserUseCaseConfiguration.java"
+  ],
+  "unused_injected_dependencies_removed": 10,
+  "formatter": "google-java-format 1.37.0, AOSP, 120 columns",
+  "format_check": "passed",
+  "suites": [
+    {
+      "name": "kh.edu.iam.AssignmentRulesTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.FullAssignmentIntegrationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.ProviderIdentityMapperTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "co.istad.iam.PartTwoIntegrationTest",
+      "tests": "14",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "tests": 34,
+  "failures": 0,
+  "browser_checks": 16
+}

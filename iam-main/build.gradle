@@ -12,9 +12,17 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.liquibase:liquibase-core'
+    implementation 'org.springframework.boot:spring-boot-starter-liquibase'
 
     runtimeOnly 'org.postgresql:postgresql'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.springframework.security:spring-security-core'
+    testImplementation 'org.springframework.security:spring-security-oauth2-jose'
+    testImplementation 'org.springframework.security:spring-security-oauth2-authorization-server'
+    testImplementation 'org.springframework.security:spring-security-oauth2-client'
+    testImplementation 'org.springframework.boot:spring-boot-web-server'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     implementation project(':iam-domain:iam-domain-core')
     implementation project(':iam-domain:iam-application-service')
@@ -26,4 +34,17 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+// Integration tests use an explicitly supplied disposable PostgreSQL database.
+tasks.named('test') {
+    systemProperty 'iam.packaged.checks', providers.gradleProperty('packagedChecks').getOrElse('false')
+    systemProperty 'iam.packaged.jar', tasks.named('bootJar').get().archiveFile.get().asFile.absolutePath
+    if (providers.gradleProperty('packagedChecks').getOrElse('false') == 'true') dependsOn tasks.named('bootJar')
+    systemProperty 'iam.browser.checks', providers.gradleProperty('browserChecks').getOrElse('false')
+    systemProperty 'iam.project.root', rootProject.projectDir.absolutePath
+    systemProperty 'iam.part2.integration', providers.gradleProperty('part2Integration').getOrElse('false')
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }

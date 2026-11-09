@@ -1,0 +1,22 @@
+{
+  "passed": 16,
+  "checks": [
+    "English sign-in renders",
+    "Password is masked",
+    "Password visibility toggle is accessible",
+    "Khmer locale switch renders",
+    "Invalid registration preserves an accessible inline error",
+    "Registration redirects to sign-in",
+    "Account profile renders after authentication",
+    "Native locale select is keyboard reachable",
+    "Profile save preserves the changed field",
+    "Dirty navigation uses an app-owned dialog",
+    "Escape cancels navigation and restores focus",
+    "Password change shows success",
+    "All four provider linking actions exist",
+    "Connected applications has an empty state",
+    "Mobile form is reachable without document overflow",
+    "No browser errors or server failures"
+  ],
+  "errors": []
+}
