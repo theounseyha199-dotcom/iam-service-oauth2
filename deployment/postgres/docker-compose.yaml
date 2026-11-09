@@ -11,8 +11,9 @@ services:
     ports:
       - "9543:5432"
     environment:
-      POSTGRES_PASSWORD: "qwerqwer"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in your environment}"
       POSTGRES_USER: "iteuser"
+
     volumes:
       - ite-pg-vol:/var/lib/postgresql/18/docker
       - ./init_db/:/docker-entrypoint-initdb.d

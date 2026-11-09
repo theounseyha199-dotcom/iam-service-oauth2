@@ -1,0 +1,19 @@
+name: istad-iam-review
+services:
+  postgres:
+    image: postgres:18.4
+    ports:
+      - "127.0.0.1:${IAM_DB_PORT:-9544}:5432"
+    environment:
+      POSTGRES_DB: db_iam_service
+      POSTGRES_USER: iteuser
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Export DB_PASSWORD before starting PostgreSQL}"
+    volumes:
+      - iam-review-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iteuser -d db_iam_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+volumes:
+  iam-review-postgres:

@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+.local/
+
+# Local IntelliJ run configuration containing environment secrets
+/.run/IAM Local.private.run.xml
+/postman/*.private.postman_environment.json
