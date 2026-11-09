@@ -1,12 +1,16 @@
 package kh.edu.iam.persistence.adapter;
 
 import kh.edu.iam.Role;
+import kh.edu.iam.application.common.PageResult;
 import kh.edu.iam.application.exception.DuplicateResourceException;
 import kh.edu.iam.application.port.out.RoleRepository;
+import kh.edu.iam.application.role.query.RoleFilterQuery;
 import kh.edu.iam.persistence.entity.RoleEntity;
 import kh.edu.iam.persistence.mapper.RolePersistenceMapper;
 import kh.edu.iam.persistence.repository.RoleJpaRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,4 +104,38 @@ public class RolePersistenceAdapter implements RoleRepository {
 
         return false;
     }
-}
+
+    @Override
+    public PageResult<Role> findAll(RoleFilterQuery query) {
+        Objects.requireNonNull(query, "query is required");
+
+        Sort.Direction direction = query.descending()
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
+
+        Sort sort = Sort.by(direction, query.sortBy())
+                .and(Sort.by("id"));
+
+        var pageable = PageRequest.of(
+                query.page(),
+                query.size(),
+                sort
+        );
+
+        var page = repository.search(
+                query.search(),
+                query.active(),
+                pageable
+        );
+
+        return new PageResult<>(
+                page.getContent().stream()
+                        .map(RolePersistenceMapper::toDomain)
+                        .toList(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages()
+        );
+
+    }}

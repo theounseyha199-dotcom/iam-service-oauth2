@@ -1,6 +1,8 @@
 package kh.edu.iam.application.port.out;
 
 import kh.edu.iam.Role;
+import kh.edu.iam.application.common.PageResult;
+import kh.edu.iam.application.role.query.RoleFilterQuery;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -12,4 +14,6 @@ public interface RoleRepository {
     Optional<Role> findByUuid(UUID uuid);
 
     boolean existsByName(String name);
+
+    PageResult<Role> findAll(RoleFilterQuery query);
 }
