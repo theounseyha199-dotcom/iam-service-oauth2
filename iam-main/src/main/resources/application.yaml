@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: iam-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:9543/db_oauth2
+    username: "iteuser"
+    password: "qwerqwer"
+
+server:
+  port: 9000
+
+liquibase:
+  change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false

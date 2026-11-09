@@ -1,0 +1,15 @@
+plugins {
+    id 'base'
+}
+
+group = 'istad.ha'
+version = '0.0.1-SNAPSHOT'
+description = 'iam-service'
+
+tasks.named('check') {
+    dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'check' } }
+}
+
+tasks.named('assemble') {
+    dependsOn subprojects.collect { it.tasks.matching { task -> task.name == 'assemble' } }
+}

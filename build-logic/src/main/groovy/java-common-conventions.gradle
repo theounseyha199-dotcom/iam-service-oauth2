@@ -1,0 +1,37 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'kh.edu.istad'
+version = '1.0.0'
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(libs.versions.java.version.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+// Keep Lombok available at compile time without adding it to runtime artifacts.
+dependencies {
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    compileOnly platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}")
+    annotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}")
+    testCompileOnly platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}")
+    testAnnotationProcessor platform("org.springframework.boot:spring-boot-dependencies:${libs.versions.spring.boot.get()}")
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}

@@ -1,0 +1,18 @@
+plugins {
+    id 'java-common-conventions'
+}
+
+group = 'istad.ha'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':iam-domain:iam-application-service')
+}
+
+test {
+    useJUnitPlatform()
+}

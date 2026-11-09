@@ -1,0 +1,29 @@
+plugins {
+    id 'spring-boot-common-conventions'
+}
+
+group = 'istad.ha'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.liquibase:liquibase-core'
+
+    runtimeOnly 'org.postgresql:postgresql'
+
+    implementation project(':iam-domain:iam-domain-core')
+    implementation project(':iam-domain:iam-application-service')
+    implementation project(':iam-persistence')
+    implementation project(':iam-infrastructure')
+    implementation project(':iam-rest-api')
+    implementation project(':iam-web')
+}
+
+test {
+    useJUnitPlatform()
+}
