@@ -6,3 +6,7 @@ databaseChangeLog:
   - include:
       file: changes/002-create-roles.sql
       relativeToChangelogFile: true
+
+  - include:
+      file: changes/003-create-role-permissions.sql
+      relativeToChangelogFile: true
