@@ -45,33 +45,22 @@ public final class Identity {
             Instant linkedAt,
             Instant lastLoginAt,
             AuditMetadata audit,
-            DeletionMetadata deletion
-    ) {
+            DeletionMetadata deletion) {
         this.id = id;
         this.uuid = Objects.requireNonNull(uuid, "uuid is required");
-        this.userId = Objects.requireNonNull(
-                userId, "userId is required"
-        );
+        this.userId = Objects.requireNonNull(userId, "userId is required");
 
         if (userId <= 0) {
-            throw new IllegalArgumentException(
-                    "userId must be positive"
-            );
+            throw new IllegalArgumentException("userId must be positive");
         }
 
-        this.provider = Objects.requireNonNull(
-                provider, "provider is required"
-        );
-        this.providerSubject = required(
-                providerSubject, 255, "providerSubject"
-        );
+        this.provider = Objects.requireNonNull(provider, "provider is required");
+        this.providerSubject = required(providerSubject, 255, "providerSubject");
 
         this.email = normalizeEmail(email);
 
         if (emailVerified && this.email == null) {
-            throw new IllegalArgumentException(
-                    "A verified email must have a value"
-            );
+            throw new IllegalArgumentException("A verified email must have a value");
         }
 
         this.emailVerified = emailVerified;
@@ -79,21 +68,15 @@ public final class Identity {
         this.username = optional(username, 100, "username");
         this.pictureUrl = optional(pictureUrl, 500, "pictureUrl");
         this.attributes = attributes;
-        this.linkedAt = Objects.requireNonNull(
-                linkedAt, "linkedAt is required"
-        );
+        this.linkedAt = Objects.requireNonNull(linkedAt, "linkedAt is required");
 
         if (lastLoginAt != null && lastLoginAt.isBefore(linkedAt)) {
-            throw new IllegalArgumentException(
-                    "lastLoginAt cannot be before linkedAt"
-            );
+            throw new IllegalArgumentException("lastLoginAt cannot be before linkedAt");
         }
 
         this.lastLoginAt = lastLoginAt;
         this.audit = Objects.requireNonNull(audit, "audit is required");
-        this.deletion = Objects.requireNonNull(
-                deletion, "deletion is required"
-        );
+        this.deletion = Objects.requireNonNull(deletion, "deletion is required");
     }
 
     public static Identity link(
@@ -107,8 +90,7 @@ public final class Identity {
             String pictureUrl,
             String attributes,
             String actor,
-            Instant now
-    ) {
+            Instant now) {
         return new Identity(
                 null,
                 UUID.randomUUID(),
@@ -124,8 +106,7 @@ public final class Identity {
                 now,
                 null,
                 AuditMetadata.create(actor, now),
-                DeletionMetadata.active()
-        );
+                DeletionMetadata.active());
     }
 
     public void recordLogin(String actor, Instant now) {
@@ -133,11 +114,8 @@ public final class Identity {
 
         Objects.requireNonNull(now, "now is required");
 
-        if (now.isBefore(linkedAt)
-                || (lastLoginAt != null && now.isBefore(lastLoginAt))) {
-            throw new IllegalArgumentException(
-                    "Login time cannot move backwards"
-            );
+        if (now.isBefore(linkedAt) || (lastLoginAt != null && now.isBefore(lastLoginAt))) {
+            throw new IllegalArgumentException("Login time cannot move backwards");
         }
 
         AuditMetadata updatedAudit = audit.updated(actor, now);
@@ -156,11 +134,18 @@ public final class Identity {
         this.audit = updatedAudit;
     }
 
+    public void relink(String actor, Instant now) {
+        if (!deletion.deleted()) {
+            throw new IllegalStateException("Identity is already linked");
+        }
+        AuditMetadata updatedAudit = audit.updated(actor, now);
+        this.deletion = DeletionMetadata.active();
+        this.audit = updatedAudit;
+    }
+
     private void requireNotDeleted() {
         if (deletion.deleted()) {
-            throw new IllegalStateException(
-                    "Deleted identities cannot be changed"
-            );
+            throw new IllegalStateException("Deleted identities cannot be changed");
         }
     }
 
@@ -173,30 +158,17 @@ public final class Identity {
         return required(normalized, 255, "email");
     }
 
-    private static String required(
-            String value,
-            int maxLength,
-            String field
-    ) {
+    private static String required(String value, int maxLength, String field) {
         if (value == null || value.isBlank()) {
-            throw new IllegalArgumentException(
-                    field + " is required"
-            );
+            throw new IllegalArgumentException(field + " is required");
         }
 
         return optional(value, maxLength, field);
     }
 
-    private static String optional(
-            String value,
-            int maxLength,
-            String field
-    ) {
+    private static String optional(String value, int maxLength, String field) {
         if (value != null && value.length() > maxLength) {
-            throw new IllegalArgumentException(
-                    field + " cannot exceed "
-                            + maxLength + " characters"
-            );
+            throw new IllegalArgumentException(field + " cannot exceed " + maxLength + " characters");
         }
 
         return value;

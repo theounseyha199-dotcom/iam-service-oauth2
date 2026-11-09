@@ -19,29 +19,15 @@ public final class RolePermission extends Assignment {
             Instant expiresAt,
             Instant revokedAt,
             String revokedBy,
-            String reason
-    ) {
-        super(
-                id, assignedAt, assignedBy, expiresAt,
-                revokedAt, revokedBy, reason
-        );
+            String reason) {
+        super(id, assignedAt, assignedBy, expiresAt, revokedAt, revokedBy, reason);
 
         this.roleId = requireId(roleId, "roleId");
         this.permissionId = requireId(permissionId, "permissionId");
     }
 
     public static RolePermission assign(
-            Long roleId,
-            Long permissionId,
-            String actor,
-            Instant now,
-            Instant expiresAt,
-            String reason
-    ) {
-        return new RolePermission(
-                null, roleId, permissionId,
-                now, actor, expiresAt,
-                null, null, reason
-        );
+            Long roleId, Long permissionId, String actor, Instant now, Instant expiresAt, String reason) {
+        return new RolePermission(null, roleId, permissionId, now, actor, expiresAt, null, null, reason);
     }
 }

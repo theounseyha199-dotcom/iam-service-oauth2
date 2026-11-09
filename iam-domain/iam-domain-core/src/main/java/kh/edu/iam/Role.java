@@ -24,8 +24,7 @@ public final class Role {
             boolean system,
             boolean active,
             AuditMetadata audit,
-            DeletionMetadata deletion
-    ) {
+            DeletionMetadata deletion) {
         this.id = id;
         this.uuid = Objects.requireNonNull(uuid, "uuid is required");
         this.name = validateName(name);
@@ -33,17 +32,10 @@ public final class Role {
         this.system = system;
         this.active = active;
         this.audit = Objects.requireNonNull(audit, "audit is required");
-        this.deletion = Objects.requireNonNull(
-                deletion, "deletion is required"
-        );
+        this.deletion = Objects.requireNonNull(deletion, "deletion is required");
     }
 
-    public static Role create(
-            String name,
-            String description,
-            String actor,
-            Instant now
-    ) {
+    public static Role create(String name, String description, String actor, Instant now) {
         return new Role(
                 null,
                 UUID.randomUUID(),
@@ -52,16 +44,10 @@ public final class Role {
                 false,
                 true,
                 AuditMetadata.create(actor, now),
-                DeletionMetadata.active()
-        );
+                DeletionMetadata.active());
     }
 
-    public void update(
-            String name,
-            String description,
-            String actor,
-            Instant now
-    ) {
+    public void update(String name, String description, String actor, Instant now) {
         requireEditable();
 
         String validatedName = validateName(name);
@@ -112,29 +98,21 @@ public final class Role {
 
     private void requireEditable() {
         if (deletion.deleted()) {
-            throw new IllegalStateException(
-                    "Deleted roles cannot be changed"
-            );
+            throw new IllegalStateException("Deleted roles cannot be changed");
         }
 
         if (system) {
-            throw new IllegalStateException(
-                    "System roles cannot be changed or deleted"
-            );
+            throw new IllegalStateException("System roles cannot be changed or deleted");
         }
     }
 
     private static String validateName(String name) {
         if (name == null || name.isBlank() || name.length() > 50) {
-            throw new IllegalArgumentException(
-                    "Role name must contain 1 to 50 characters"
-            );
+            throw new IllegalArgumentException("Role name must contain 1 to 50 characters");
         }
 
         if (!name.equals(name.strip())) {
-            throw new IllegalArgumentException(
-                    "Role name cannot contain surrounding whitespace"
-            );
+            throw new IllegalArgumentException("Role name cannot contain surrounding whitespace");
         }
 
         return name;
@@ -142,9 +120,7 @@ public final class Role {
 
     private static String validateDescription(String description) {
         if (description != null && description.length() > 255) {
-            throw new IllegalArgumentException(
-                    "Description cannot exceed 255 characters"
-            );
+            throw new IllegalArgumentException("Description cannot exceed 255 characters");
         }
 
         return description;

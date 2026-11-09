@@ -3,10 +3,7 @@ package kh.edu.iam;
 import java.time.Instant;
 import java.util.Objects;
 
-public record AuditMetadata(
-        Instant createdAt, String createdBy,
-        Instant updatedAt, String updatedBy, long version
-) {
+public record AuditMetadata(Instant createdAt, String createdBy, Instant updatedAt, String updatedBy, long version) {
     public AuditMetadata {
         Objects.requireNonNull(createdAt, "createdAt is required");
         Objects.requireNonNull(updatedAt, "updatedAt is required");

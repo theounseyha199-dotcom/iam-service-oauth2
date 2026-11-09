@@ -24,34 +24,25 @@ public abstract class Assignment {
             Instant expiresAt,
             Instant revokedAt,
             String revokedBy,
-            String reason
-    ) {
+            String reason) {
         this.id = id;
-        this.assignedAt = Objects.requireNonNull(
-                assignedAt, "assignedAt is required"
-        );
+        this.assignedAt = Objects.requireNonNull(assignedAt, "assignedAt is required");
 
         AuditMetadata.requireActor(assignedBy);
 
         if (expiresAt != null && !expiresAt.isAfter(assignedAt)) {
-            throw new IllegalArgumentException(
-                    "expiresAt must be after assignedAt"
-            );
+            throw new IllegalArgumentException("expiresAt must be after assignedAt");
         }
 
         if ((revokedAt == null) != (revokedBy == null)) {
-            throw new IllegalArgumentException(
-                    "revokedAt and revokedBy must be provided together"
-            );
+            throw new IllegalArgumentException("revokedAt and revokedBy must be provided together");
         }
 
         if (revokedAt != null) {
             AuditMetadata.requireActor(revokedBy);
 
             if (revokedAt.isBefore(assignedAt)) {
-                throw new IllegalArgumentException(
-                        "revokedAt cannot be before assignedAt"
-                );
+                throw new IllegalArgumentException("revokedAt cannot be before assignedAt");
             }
         }
 
@@ -74,18 +65,14 @@ public abstract class Assignment {
 
     public void revoke(String actor, Instant now) {
         if (revokedAt != null) {
-            throw new IllegalStateException(
-                    "Assignment has already been revoked"
-            );
+            throw new IllegalStateException("Assignment has already been revoked");
         }
 
         AuditMetadata.requireActor(actor);
         Objects.requireNonNull(now, "now is required");
 
         if (now.isBefore(assignedAt)) {
-            throw new IllegalArgumentException(
-                    "Revocation time cannot be before assignment time"
-            );
+            throw new IllegalArgumentException("Revocation time cannot be before assignment time");
         }
 
         this.revokedAt = now;
@@ -94,9 +81,7 @@ public abstract class Assignment {
 
     protected static Long requireId(Long id, String field) {
         if (id == null || id <= 0) {
-            throw new IllegalArgumentException(
-                    field + " must be positive"
-            );
+            throw new IllegalArgumentException(field + " must be positive");
         }
 
         return id;
@@ -104,9 +89,7 @@ public abstract class Assignment {
 
     private static void validateReason(String reason) {
         if (reason != null && reason.length() > 255) {
-            throw new IllegalArgumentException(
-                    "reason cannot exceed 255 characters"
-            );
+            throw new IllegalArgumentException("reason cannot exceed 255 characters");
         }
     }
 }

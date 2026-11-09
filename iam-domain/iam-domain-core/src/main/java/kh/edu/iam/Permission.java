@@ -1,18 +1,17 @@
 package kh.edu.iam;
 
-
 import lombok.Getter;
-import java.util.Objects;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Getter
 public class Permission {
     private final Long id;
     private final UUID uuid;
-    private final String resource;
-    private final String action;
+    private String resource;
+    private String action;
     private final boolean system;
 
     private String description;
@@ -29,34 +28,24 @@ public class Permission {
             boolean system,
             boolean active,
             AuditMetadata audit,
-            DeletionMetadata deletion
-    ) {
+            DeletionMetadata deletion) {
         this.id = id;
         this.uuid = Objects.requireNonNull(uuid, "uuid is required");
         this.resource = validatePart(resource, "resource");
         this.action = validatePart(action, "action");
 
         if ((this.resource + ":" + this.action).length() > 100) {
-            throw new IllegalArgumentException(
-                    "Permission name cannot exceed 100 characters"
-            );
+            throw new IllegalArgumentException("Permission name cannot exceed 100 characters");
         }
 
         this.description = validateDescription(description);
         this.system = system;
         this.active = active;
         this.audit = Objects.requireNonNull(audit, "audit is required");
-        this.deletion = Objects.requireNonNull(
-                deletion, "deletion is required"
-        );
+        this.deletion = Objects.requireNonNull(deletion, "deletion is required");
     }
-    public static Permission create(
-            String resource,
-            String action,
-            String description,
-            String actor,
-            Instant now
-    ) {
+
+    public static Permission create(String resource, String action, String description, String actor, Instant now) {
         return new Permission(
                 null,
                 UUID.randomUUID(),
@@ -66,17 +55,25 @@ public class Permission {
                 false,
                 true,
                 AuditMetadata.create(actor, now),
-                DeletionMetadata.active()
-        );
+                DeletionMetadata.active());
     }
 
+    public void update(String resource, String action, String description, String actor, Instant now) {
+        requireEditable();
+        String checkedResource = validatePart(resource, "resource");
+        String checkedAction = validatePart(action, "action");
+        if ((checkedResource + ":" + checkedAction).length() > 100) {
+            throw new IllegalArgumentException("Permission name cannot exceed 100 characters");
+        }
+        String checkedDescription = validateDescription(description);
+        AuditMetadata changed = audit.updated(actor, now);
+        this.resource = checkedResource;
+        this.action = checkedAction;
+        this.description = checkedDescription;
+        this.audit = changed;
+    }
 
-
-    public void updateDescription(
-            String description,
-            String actor,
-            Instant now
-    ) {
+    public void updateDescription(String description, String actor, Instant now) {
         requireEditable();
 
         String validated = validateDescription(description);
@@ -112,15 +109,11 @@ public class Permission {
 
     private void requireEditable() {
         if (deletion.deleted()) {
-            throw new IllegalStateException(
-                    "Deleted permissions cannot be changed"
-            );
+            throw new IllegalStateException("Deleted permissions cannot be changed");
         }
 
         if (system) {
-            throw new IllegalStateException(
-                    "System permissions cannot be changed or deleted"
-            );
+            throw new IllegalStateException("System permissions cannot be changed or deleted");
         }
     }
 
@@ -130,15 +123,11 @@ public class Permission {
         }
 
         if (value.length() > 50) {
-            throw new IllegalArgumentException(
-                    field + " cannot exceed 50 characters"
-            );
+            throw new IllegalArgumentException(field + " cannot exceed 50 characters");
         }
 
         if (!value.equals(value.strip()) || value.contains(":")) {
-            throw new IllegalArgumentException(
-                    field + " cannot contain ':' or surrounding whitespace"
-            );
+            throw new IllegalArgumentException(field + " cannot contain ':' or surrounding whitespace");
         }
 
         return value;
@@ -146,9 +135,7 @@ public class Permission {
 
     private static String validateDescription(String description) {
         if (description != null && description.length() > 255) {
-            throw new IllegalArgumentException(
-                    "Description cannot exceed 255 characters"
-            );
+            throw new IllegalArgumentException("Description cannot exceed 255 characters");
         }
 
         return description;

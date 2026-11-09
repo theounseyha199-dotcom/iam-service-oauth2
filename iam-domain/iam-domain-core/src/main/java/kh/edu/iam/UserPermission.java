@@ -22,18 +22,12 @@ public final class UserPermission extends Assignment {
             Instant expiresAt,
             Instant revokedAt,
             String revokedBy,
-            String reason
-    ) {
-        super(
-                id, assignedAt, assignedBy, expiresAt,
-                revokedAt, revokedBy, reason
-        );
+            String reason) {
+        super(id, assignedAt, assignedBy, expiresAt, revokedAt, revokedBy, reason);
 
         this.userId = requireId(userId, "userId");
         this.permissionId = requireId(permissionId, "permissionId");
-        this.effect = Objects.requireNonNull(
-                effect, "effect is required"
-        );
+        this.effect = Objects.requireNonNull(effect, "effect is required");
     }
 
     public static UserPermission assign(
@@ -43,12 +37,7 @@ public final class UserPermission extends Assignment {
             String actor,
             Instant now,
             Instant expiresAt,
-            String reason
-    ) {
-        return new UserPermission(
-                null, userId, permissionId, effect,
-                now, actor, expiresAt,
-                null, null, reason
-        );
+            String reason) {
+        return new UserPermission(null, userId, permissionId, effect, now, actor, expiresAt, null, null, reason);
     }
 }

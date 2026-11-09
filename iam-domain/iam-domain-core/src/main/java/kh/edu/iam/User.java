@@ -47,22 +47,17 @@ public final class User {
             Instant lastLoginAt,
             Instant passwordChangedAt,
             AuditMetadata audit,
-            DeletionMetadata deletion
-    ) {
+            DeletionMetadata deletion) {
         this.id = id;
         this.uuid = Objects.requireNonNull(uuid, "uuid is required");
         this.username = validateUsername(username);
         this.email = validateEmail(email);
         this.emailVerified = emailVerified;
         this.passwordHash = validatePasswordHash(passwordHash);
-        this.profile = Objects.requireNonNull(
-                profile, "profile is required"
-        );
+        this.profile = Objects.requireNonNull(profile, "profile is required");
 
         if (failedLoginAttempts < 0) {
-            throw new IllegalArgumentException(
-                    "failedLoginAttempts cannot be negative"
-            );
+            throw new IllegalArgumentException("failedLoginAttempts cannot be negative");
         }
 
         this.enabled = enabled;
@@ -73,19 +68,11 @@ public final class User {
         this.lastLoginAt = lastLoginAt;
         this.passwordChangedAt = passwordChangedAt;
         this.audit = Objects.requireNonNull(audit, "audit is required");
-        this.deletion = Objects.requireNonNull(
-                deletion, "deletion is required"
-        );
+        this.deletion = Objects.requireNonNull(deletion, "deletion is required");
     }
 
     public static User create(
-            String username,
-            String email,
-            String passwordHash,
-            UserProfile profile,
-            String actor,
-            Instant now
-    ) {
+            String username, String email, String passwordHash, UserProfile profile, String actor, Instant now) {
         return new User(
                 null,
                 UUID.randomUUID(),
@@ -102,31 +89,20 @@ public final class User {
                 null,
                 passwordHash == null ? null : now,
                 AuditMetadata.create(actor, now),
-                DeletionMetadata.active()
-        );
+                DeletionMetadata.active());
     }
 
-    public void updateProfile(
-            UserProfile profile,
-            String actor,
-            Instant now
-    ) {
+    public void updateProfile(UserProfile profile, String actor, Instant now) {
         requireNotDeleted();
 
-        UserProfile validated = Objects.requireNonNull(
-                profile, "profile is required"
-        );
+        UserProfile validated = Objects.requireNonNull(profile, "profile is required");
         AuditMetadata updatedAudit = audit.updated(actor, now);
 
         this.profile = validated;
         this.audit = updatedAudit;
     }
 
-    public void changeEmail(
-            String email,
-            String actor,
-            Instant now
-    ) {
+    public void changeEmail(String email, String actor, Instant now) {
         requireNotDeleted();
 
         String validated = validateEmail(email);
@@ -140,19 +116,20 @@ public final class User {
         this.audit = updatedAudit;
     }
 
-    public void replacePasswordHash(
-            String passwordHash,
-            String actor,
-            Instant now
-    ) {
+    public void verifyEmail(String actor, Instant now) {
+        requireNotDeleted();
+        AuditMetadata updatedAudit = audit.updated(actor, now);
+        this.emailVerified = true;
+        this.audit = updatedAudit;
+    }
+
+    public void replacePasswordHash(String passwordHash, String actor, Instant now) {
         requireNotDeleted();
 
         String validated = validatePasswordHash(passwordHash);
 
         if (validated == null) {
-            throw new IllegalArgumentException(
-                    "A new password hash is required"
-            );
+            throw new IllegalArgumentException("A new password hash is required");
         }
 
         AuditMetadata updatedAudit = audit.updated(actor, now);
@@ -200,22 +177,14 @@ public final class User {
         this.audit = updatedAudit;
     }
 
-    public void recordLoginAttempt(
-            boolean success,
-            String actor,
-            Instant now
-    ) {
+    public void recordLoginAttempt(boolean success, String actor, Instant now) {
         requireNotDeleted();
 
         if (success && !canAuthenticate()) {
-            throw new IllegalStateException(
-                    "User is not allowed to sign in"
-            );
+            throw new IllegalStateException("User is not allowed to sign in");
         }
 
-        int updatedAttempts = success
-                ? 0
-                : Math.addExact(failedLoginAttempts, 1);
+        int updatedAttempts = success ? 0 : Math.addExact(failedLoginAttempts, 1);
 
         AuditMetadata updatedAudit = audit.updated(actor, now);
 
@@ -240,11 +209,7 @@ public final class User {
     }
 
     public boolean canAuthenticate() {
-        return !deletion.deleted()
-                && enabled
-                && accountNonExpired
-                && accountNonLocked
-                && credentialsNonExpired;
+        return !deletion.deleted() && enabled && accountNonExpired && accountNonLocked && credentialsNonExpired;
     }
 
     public boolean hasPassword() {
@@ -253,21 +218,14 @@ public final class User {
 
     private void requireNotDeleted() {
         if (deletion.deleted()) {
-            throw new IllegalStateException(
-                    "Deleted users cannot be changed"
-            );
+            throw new IllegalStateException("Deleted users cannot be changed");
         }
     }
 
     private static String validateUsername(String username) {
-        if (username == null
-                || username.isBlank()
-                || username.length() > 50
-                || !username.equals(username.strip())) {
+        if (username == null || username.isBlank() || username.length() > 50 || !username.equals(username.strip())) {
             throw new IllegalArgumentException(
-                    "Username must contain 1 to 50 characters "
-                            + "without surrounding whitespace"
-            );
+                    "Username must contain 1 to 50 characters " + "without surrounding whitespace");
         }
 
         return username;
@@ -294,9 +252,7 @@ public final class User {
 
     private static String validatePasswordHash(String hash) {
         if (hash != null && (hash.isBlank() || hash.length() > 255)) {
-            throw new IllegalArgumentException(
-                    "Password hash must contain 1 to 255 characters"
-            );
+            throw new IllegalArgumentException("Password hash must contain 1 to 255 characters");
         }
 
         return hash;

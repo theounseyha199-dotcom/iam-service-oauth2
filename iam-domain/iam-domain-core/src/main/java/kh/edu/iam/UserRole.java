@@ -19,29 +19,15 @@ public final class UserRole extends Assignment {
             Instant expiresAt,
             Instant revokedAt,
             String revokedBy,
-            String reason
-    ) {
-        super(
-                id, assignedAt, assignedBy, expiresAt,
-                revokedAt, revokedBy, reason
-        );
+            String reason) {
+        super(id, assignedAt, assignedBy, expiresAt, revokedAt, revokedBy, reason);
 
         this.userId = requireId(userId, "userId");
         this.roleId = requireId(roleId, "roleId");
     }
 
     public static UserRole assign(
-            Long userId,
-            Long roleId,
-            String actor,
-            Instant now,
-            Instant expiresAt,
-            String reason
-    ) {
-        return new UserRole(
-                null, userId, roleId,
-                now, actor, expiresAt,
-                null, null, reason
-        );
+            Long userId, Long roleId, String actor, Instant now, Instant expiresAt, String reason) {
+        return new UserRole(null, userId, roleId, now, actor, expiresAt, null, null, reason);
     }
 }
