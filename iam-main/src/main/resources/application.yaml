@@ -42,3 +42,14 @@ app:
       audience-rules:
         - any-scopes: [openid, profile, email, phone, address]
           audiences: [iam-api]
+
+# Swagger uses a public, PKCE-only client; no client secret is exposed in the UI.
+springdoc:
+  paths-to-match: /api/**
+  swagger-ui:
+    path: /swagger-ui.html
+    persist-authorization: false
+    oauth:
+      client-id: iam-swagger
+      use-pkce-with-authorization-code-grant: true
+      scopes: openid,profile,email

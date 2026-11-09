@@ -88,6 +88,9 @@ public class SecurityConfig {
                                                 "/error",
                                                 "/federation/complete",
                                                 "/federation/cancel",
+                                                "/v3/api-docs/**",
+                                                "/swagger-ui/**",
+                                                "/swagger-ui.html",
                                                 "/css/**",
                                                 "/js/**")
                                         .permitAll()
