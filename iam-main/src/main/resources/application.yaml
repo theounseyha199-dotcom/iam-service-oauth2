@@ -1,19 +1,44 @@
 spring:
   application:
     name: iam-service
-
   datasource:
-    url: jdbc:postgresql://localhost:9543/db_oauth2
-    username: "iteuser"
-    password: "qwerqwer"
-
-server:
-  port: 9000
-
-liquibase:
-  change-log: classpath:db/changelog/db.changelog-master.yaml
-
+    url: ${DB_URL:jdbc:postgresql://localhost:9543/db_oauth2}
+    username: ${DB_USERNAME:iteuser}
+    password: ${DB_PASSWORD}
+  liquibase:
+    change-log: classpath:db/changelog/changes/changelog-master.yaml
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+
+server:
+  port: ${SERVER_PORT:9000}
+
+gg:
+  jte:
+    use-precompiled-templates: true
+
+app:
+  iam:
+    issuer: ${IAM_ISSUER:http://localhost:9000}
+    signing-key-file: ${IAM_SIGNING_KEY_FILE:.local/iam-signing-key.json}
+    clients:
+      oidc:
+        id: ${IAM_OIDC_CLIENT_ID:iam-web-client}
+        secret: ${IAM_OIDC_CLIENT_SECRET}
+        scopes: [openid, profile, email, phone, address]
+        redirect-uris:
+          - ${IAM_OIDC_REDIRECT_URI:http://localhost:8081/login/oauth2/code/iam}
+          - https://oauth.pstmn.io/v1/browser-callback
+          - https://oauth.pstmn.io/v1/callback
+        logout-redirect-uris:
+          - ${IAM_OIDC_LOGOUT_URI:http://localhost:8081/}
+      services:
+        - id: ${IAM_DCR_CLIENT_ID:iam-registration}
+          secret: ${IAM_DCR_CLIENT_SECRET}
+          scopes: [client.create]
+    token:
+      audience-rules:
+        - any-scopes: [openid, profile, email, phone, address]
+          audiences: [iam-api]

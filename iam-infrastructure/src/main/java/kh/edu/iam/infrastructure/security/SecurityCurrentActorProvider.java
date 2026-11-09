@@ -1,41 +1,40 @@
 package kh.edu.iam.infrastructure.security;
 
 import kh.edu.iam.application.port.out.CurrentActorProvider;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.authentication.AuthenticationTrustResolver;
-import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
-import org.springframework.security.core.Authentication;
+import kh.edu.iam.application.port.out.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SecurityCurrentActorProvider implements CurrentActorProvider {
-
-    private final AuthenticationTrustResolver trustResolver =
-            new AuthenticationTrustResolverImpl();
+@RequiredArgsConstructor
+public final class SecurityCurrentActorProvider implements CurrentActorProvider {
+    private final UserRepository users;
 
     @Override
     public String currentActor() {
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
-
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !authentication.isAuthenticated()
-                || trustResolver.isAnonymous(authentication)) {
-            throw new AuthenticationCredentialsNotFoundException(
-                    "An authenticated actor is required"
-            );
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return "anonymous";
         }
-
-        String actor = authentication.getName();
-
-        if (actor == null || actor.isBlank() || actor.length() > 100) {
-            throw new IllegalStateException(
-                    "Actor must contain 1 to 100 characters"
-            );
+        if (authentication.getPrincipal() instanceof IamUserPrincipal user) {
+            return user.uuid().toString();
         }
-
-        return actor;
+        if (authentication.getPrincipal() instanceof Jwt jwt) {
+            return jwt.getSubject();
+        }
+        if (authentication.getPrincipal() instanceof OAuth2User) {
+            return "external";
+        }
+        return users.findByUsernameOrEmail(authentication.getName())
+                .map(user -> user.getUuid().toString())
+                .orElse(authentication.getName());
     }
 }

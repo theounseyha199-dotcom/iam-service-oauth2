@@ -1,15 +1,26 @@
 databaseChangeLog:
   - include:
-      file: changes/001-create-permissions.sql
+      file: 001-create-permissions.sql
       relativeToChangelogFile: true
-
   - include:
-      file: changes/002-create-roles.sql
+      file: 002-create-rolse.sql
       relativeToChangelogFile: true
-
   - include:
-      file: changes/003-create-role-permissions.sql
+      file: 003-create-role-permission.sql
       relativeToChangelogFile: true
   - include:
       file: 004-add-role-permission-revocation-reason.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 005-users-and-identities.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 006-user-assignments.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 007-seed-iam.sql
+      relativeToChangelogFile: true
+
+  - include:
+      file: 008-authorization-server.sql
       relativeToChangelogFile: true
