@@ -10,12 +10,30 @@ import org.springframework.data.repository.query.Param;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface RolePermissionJpaRepository
         extends JpaRepository<RolePermissionEntity, Long> {
 
     List<RolePermissionEntity> findByRoleIdOrderByAssignedAtDescIdDesc(
             Long roleId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select assignment
+            from RolePermissionEntity assignment
+            where assignment.roleId = :roleId
+              and assignment.revokedAt is null
+              and assignment.permissionId in (
+                  select permission.id
+                  from PermissionEntity permission
+                  where permission.uuid = :permissionUuid
+              )
+            """)
+    List<RolePermissionEntity> findUnrevokedForUpdate(
+            @Param("roleId") Long roleId,
+            @Param("permissionUuid") UUID permissionUuid
     );
 
     @Query("""

@@ -46,4 +46,7 @@ public class RolePermissionEntity {
 
     @Column(length = 255, updatable = false)
     private String reason;
+
+    @Column(name = "revocation_reason", length = 255)
+    private String revocationReason;
 }

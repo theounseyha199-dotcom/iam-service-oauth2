@@ -1,9 +1,11 @@
 package kh.edu.iam.persistence.repository;
 
+import jakarta.persistence.LockModeType;
 import kh.edu.iam.persistence.entity.PermissionEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,6 +30,17 @@ public interface PermissionJpaRepository extends JpaRepository<PermissionEntity 
             @Param("search") String search,
             @Param("active") Boolean active,
             Pageable pageable
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select permission
+        from PermissionEntity permission
+        where permission.uuid = :uuid
+          and permission.deleted = false
+        """)
+    Optional<PermissionEntity> findForUpdate(
+            @Param("uuid") UUID uuid
     );
 
 }
