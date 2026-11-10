@@ -113,3 +113,26 @@ dialog button { min-height: 44px; padding: .5rem 1rem; cursor: pointer; }
     .auth-page { padding-top: 1rem; }
     .account-page form > button[type='submit'] { width: 100%; }
 }
+
+/* Compact sign-in variant; registration and account layouts retain their width. */
+.auth-page:has(> .login-card) { max-width: 492px; padding-top: clamp(1rem, 4vh, 2.5rem); }
+.auth-page > .login-card { padding: clamp(1.25rem, 4vw, 1.5rem); }
+.login-card .eyebrow { display: flex; align-items: center; gap: .625rem; margin-bottom: .75rem; }
+.identity-mark { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: .5rem; background: var(--brand-700); color: var(--surface); font: 800 1.25rem var(--font-sans); }
+.login-card h1 { font-size: 1.875rem; }
+.auth-page .login-card .intro { margin-bottom: 1rem; font-size: .875rem; }
+.login-card form { gap: .375rem; margin-top: 1rem; }
+.login-card .divider { margin-block: 1rem; gap: .625rem; }
+.login-card .provider-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .625rem; }
+.login-card .provider-grid .button { padding: .625rem .5rem; min-height: 2.875rem; }
+.provider-icon { flex-shrink: 0; }
+.auth-page > .login-card > p:last-child { margin-top: 1rem; padding-top: 1rem; }
+.input-row-icon { position: relative; }
+.page .input-row-icon input { padding-inline-end: 3.25rem; }
+.page .input-row-icon .icon-toggle { position: absolute; inset-inline-end: 3px; top: 3px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: .625rem; border: 0; background: transparent; color: var(--gray-600); }
+.page .input-row-icon .icon-toggle:hover { background: var(--brand-50); color: var(--brand-800); }
+.eye-slash { display: none; }
+.icon-toggle[aria-pressed='true'] .eye-slash { display: block; }
+.login-card button[type='submit'] { min-width: 0; }
+.login-card button[disabled] { opacity: 1; background: var(--brand-800); }
+@media (max-width: 350px) { .login-card .provider-grid { grid-template-columns: 1fr; } }

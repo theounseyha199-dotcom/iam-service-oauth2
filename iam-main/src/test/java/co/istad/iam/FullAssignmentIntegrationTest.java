@@ -882,4 +882,20 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
             }
         }
     }
+    @Test
+    void legacyClientLogoutRequiresCsrfAndEndsTheIamSession() throws Exception {
+        var browser = login(register());
+        var confirmation = send(browser, "GET", "/logout", null, null, null);
+        assertEquals(200, confirmation.statusCode(), confirmation.body());
+        String csrfToken = csrf(confirmation.body());
+        assertEquals(403, send(browser, "POST", "/logout", "", null,
+                "application/x-www-form-urlencoded").statusCode());
+        var logout = send(browser, "POST", "/logout", form(Map.of("_csrf", csrfToken)), null,
+                "application/x-www-form-urlencoded");
+        assertEquals(302, logout.statusCode());
+        var profile = send(browser, "GET", "/", null, null, null);
+        assertEquals(302, profile.statusCode());
+        assertTrue(profile.headers().firstValue("Location").orElse("").contains("/login"));
+    }
+
 }

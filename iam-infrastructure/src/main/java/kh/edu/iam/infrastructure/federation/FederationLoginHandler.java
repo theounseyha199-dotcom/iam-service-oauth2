@@ -105,7 +105,7 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
                 }
             }
         } catch (RuntimeException ex) {
-            LOG.warn("Federation callback rejected ({})", ex.getClass().getSimpleName());
+            logFailure(request, ex);
             save(request, response, linking ? original(request) : null);
             response.sendRedirect(
                     request.getContextPath()
@@ -124,15 +124,25 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
             throw new ApplicationException("account_unavailable", "Account cannot sign in");
         }
         var principal = principals.apply(result);
-        var internal = UsernamePasswordAuthenticationToken.authenticated(principal, null, principal.getAuthorities());
+        var internal = federatedAuthentication(principal);
         save(request, response, internal);
         success.onAuthenticationSuccess(request, response, internal);
+    }
+
+    static UsernamePasswordAuthenticationToken federatedAuthentication(UserDetails principal) {
+        var authorities = new java.util.ArrayList<org.springframework.security.core.GrantedAuthority>(principal.getAuthorities());
+        // Replacing the validated provider principal must retain a typed authentication factor.
+        // Spring Security uses its issuedAt for OIDC auth_time whenever a session/sid is present.
+        authorities.add(org.springframework.security.core.authority.FactorGrantedAuthority.fromAuthority(
+                org.springframework.security.core.authority.FactorGrantedAuthority.AUTHORIZATION_CODE_AUTHORITY));
+        return UsernamePasswordAuthenticationToken.authenticated(principal, null, authorities);
     }
 
     @Override
     public void onAuthenticationFailure(
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
+        logFailure(request, exception);
         var session = request.getSession(false);
         if (session != null) {
             session.removeAttribute(PENDING);
@@ -141,6 +151,29 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
         save(request, response, original);
         response.sendRedirect(
                 request.getContextPath() + (original == null ? "/login?oauth2error" : "/profile/accounts?error"));
+    }
+
+    /** Log only bounded codes/types: exception messages can contain provider tokens or PII. */
+    private void logFailure(HttpServletRequest request, RuntimeException exception) {
+        String path = request.getRequestURI();
+        String candidate = path.substring(path.lastIndexOf('/') + 1);
+        String provider = java.util.Set.of("google", "github", "facebook", "telegram").contains(candidate)
+                ? candidate : "unknown";
+        String code = "callback_rejected";
+        if (exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauth) {
+            code = oauth.getError().getErrorCode();
+        } else if (exception instanceof ApplicationException application) {
+            code = application.code();
+        }
+        // OAuth error values may originate in a callback query; never log arbitrary input.
+        if (code == null || !code.matches("[A-Za-z0-9_]{1,80}")) code = "provider_error";
+        Throwable cause = exception;
+        for (int depth = 0; depth < 10 && cause.getCause() != null; depth++) cause = cause.getCause();
+        String location = java.util.Arrays.stream(cause.getStackTrace()).limit(8)
+                .map(frame -> frame.getClassName() + "." + frame.getMethodName() + ":" + frame.getLineNumber())
+                .collect(java.util.stream.Collectors.joining(" <- "));
+        LOG.warn("Federation sign-in rejected: provider={}, code={}, exception={}, cause={}, location={}",
+                provider, code, exception.getClass().getSimpleName(), cause.getClass().getSimpleName(), location);
     }
 
     private Authentication original(HttpServletRequest request) {

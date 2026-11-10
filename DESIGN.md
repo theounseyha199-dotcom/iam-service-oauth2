@@ -59,7 +59,7 @@ platform-owned date/select popups follow the user's browser/OS settings.
 
 ## Layout
 
-Account content max-width 1120px; authentication max-width 600px. Profile sections
+Account content max-width 1120px; authentication max-width 600px, with a 460px sign-in card. Profile sections
 use two columns above 700px and one below. Long forms use document scrolling;
 no viewport-height container clips them. Header/account navigation remains reachable
 on narrow screens. Form controls are 50px high, and error regions reserve space. Authentication cards
@@ -91,7 +91,7 @@ app-owned dialog. Actual tab closure uses the narrow beforeunload mechanism.
 
 ### Iconography
 
-Text labels carry meaning. Provider names are localized strings, not unlabeled icons.
+Text labels carry meaning. Sign-in provider icons are local SVG assets paired with localized names. A compact cobalt monogram marks the sign-in card. The shared password field supports an inset eye toggle on sign-in, retaining localized show/hide accessibility labels.
 
 ### Motion
 

@@ -106,6 +106,17 @@ public final class IamUserPrincipal implements UserDetails, CredentialsContainer
         return uuid;
     }
 
+    /** JDBC authorizations deserialize principals; session lookup must use stable user identity. */
+    @Override
+    public boolean equals(Object other) {
+        return this == other || (other instanceof IamUserPrincipal principal && uuid.equals(principal.uuid));
+    }
+
+    @Override
+    public int hashCode() {
+        return uuid.hashCode();
+    }
+
     @Override
     public String getUsername() {
         return username;

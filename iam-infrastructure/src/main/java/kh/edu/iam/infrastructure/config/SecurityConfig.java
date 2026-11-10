@@ -48,7 +48,16 @@ public class SecurityConfig {
                                     endpoint -> endpoint.consentPage("/oauth2/consent"));
                             authorizationServer.oidc(
                                     oidc ->
-                                            oidc.clientRegistrationEndpoint(
+                                            oidc.logoutEndpoint(logout -> logout.errorResponseHandler((request, response, exception) -> {
+                                                        var error = ((org.springframework.security.oauth2.core.OAuth2AuthenticationException) exception).getError();
+                                                        String description = error.getDescription();
+                                                        String parameter = description != null && description.matches("OpenID Connect 1[.]0 Logout Request Parameter: [a-z_]+")
+                                                                ? description.substring(description.lastIndexOf(' ') + 1) : "unknown";
+                                                        org.slf4j.LoggerFactory.getLogger(SecurityConfig.class).warn(
+                                                                "OIDC logout rejected: code={}, parameter={}", error.getErrorCode(), parameter);
+                                                        response.sendError(400);
+                                                    }))
+                                                    .clientRegistrationEndpoint(
                                                     registration ->
                                                             registration.authenticationProviders(
                                                                     ClientRegistrationPolicy::configure)));
@@ -94,6 +103,7 @@ public class SecurityConfig {
                                                 "/scalar",
                                                 "/scalar/**",
                                                 "/css/**",
+                                                "/images/**",
                                                 "/js/**")
                                         .permitAll()
                                         .anyRequest()
