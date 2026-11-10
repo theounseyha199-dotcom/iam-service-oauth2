@@ -3,8 +3,10 @@ java-version = "25"
 spring-boot = "4.1.1"
 spring-dependency-management = "1.1.7"
 springdoc-openapi = "3.2.0"
+scalar = "0.6.83"
 
 [libraries]
+scalar-webmvc = { module = "com.scalar.maven:scalar-webmvc", version.ref = "scalar" }
 spring-boot-gradle-plugin = { module = "org.springframework.boot:spring-boot-gradle-plugin", version.ref = "spring-boot" }
 spring-dependency-management-plugin = { module = "io.spring.gradle:dependency-management-plugin", version.ref = "spring-dependency-management" }
 spring-boot-starter-data-r2dbc = { module = "org.springframework.boot:spring-boot-starter-data-r2dbc" }

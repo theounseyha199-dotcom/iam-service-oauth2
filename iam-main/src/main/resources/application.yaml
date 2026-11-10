@@ -2,7 +2,7 @@ spring:
   application:
     name: iam-service
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:9543/db_oauth2}
+    url: ${DB_URL:jdbc:postgresql://localhost:${IAM_DB_PORT:9544}/db_iam_service}
     username: ${DB_USERNAME:iteuser}
     password: ${DB_PASSWORD}
   liquibase:
@@ -53,3 +53,10 @@ springdoc:
       client-id: iam-swagger
       use-pkce-with-authorization-code-grant: true
       scopes: openid,profile,email
+
+# Scalar shares the existing OpenAPI document and JWT bearer security scheme.
+scalar:
+  enabled: true
+  path: /scalar
+  url: /v3/api-docs
+  page-title: ISTAD IAM API Reference

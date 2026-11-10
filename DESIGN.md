@@ -62,7 +62,10 @@ platform-owned date/select popups follow the user's browser/OS settings.
 Account content max-width 1120px; authentication max-width 600px. Profile sections
 use two columns above 700px and one below. Long forms use document scrolling;
 no viewport-height container clips them. Header/account navigation remains reachable
-on narrow screens. Controls are at least 44px high, and error regions reserve space.
+on narrow screens. Form controls are 50px high, and error regions reserve space. Authentication cards
+use a restrained cobalt top edge, generous internal spacing, and a ruled provider
+divider. Language links share one compact segmented surface. Field borders use
+slate 300 at rest and a cobalt border with a pale blue focus outline.
 
 ## Elevation & Depth
 

@@ -46,6 +46,19 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     private final JsonMapper json = JsonMapper.builder().build();
 
     @Test
+    void scalarServesTheIamSpecificationWithoutOpeningProtectedApis() throws Exception {
+        var reference = send(client(), "GET", "/scalar", null, null, null);
+        assertEquals(200, reference.statusCode());
+        assertTrue(reference.headers().firstValue("content-type").orElse("").contains("text/html"));
+        assertTrue(reference.body().contains("/v3/api-docs"));
+        assertTrue(reference.body().contains("ISTAD IAM API Reference"));
+        var script = send(client(), "GET", "/scalar/scalar.js", null, null, null);
+        assertEquals(200, script.statusCode());
+        assertTrue(script.body().length() > 1000);
+        assertEquals(401, send(client(), "GET", "/api/me", null, null, null).statusCode());
+    }
+
+    @Test
     void swaggerDocumentsApiAndUsesPublicPkceClient() throws Exception {
         var ui = send(client(), "GET", "/swagger-ui/index.html", null, null, null);
         assertEquals(200, ui.statusCode());
@@ -60,6 +73,24 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                 0,
                 document.get("paths").get("/api/auth/register").get("post").get("security").size());
         assertTrue(document.get("components").get("securitySchemes").has("iamOAuth"));
+        assertEquals("Users", document.at("/paths/~1api~1users/get/tags/0").asText());
+        assertEquals("List users", document.at("/paths/~1api~1users/get/summary").asText());
+        assertEquals("My Account", document.at("/paths/~1api~1me/get/tags/0").asText());
+        assertEquals("Authorization", document.at("/tags/0/name").asText());
+        assertEquals("Authorization", document.at("/paths/~1oauth2~1token/post/tags/0").asText());
+        assertTrue(document.at("/paths/~1oauth2~1token/post/requestBody/content")
+                .has("application/x-www-form-urlencoded"));
+        assertEquals(0, document.at("/paths/~1oauth2~1authorize/get/security").size());
+        var operationIds = new java.util.HashSet<String>();
+        document.get("paths").properties().forEach(path ->
+                path.getValue().properties().forEach(method -> {
+                    var operation = method.getValue();
+                    if (operation.has("operationId")) {
+                        assertTrue(operationIds.add(operation.get("operationId").asText()));
+                        assertTrue(operation.has("summary"));
+                        assertFalse(operation.get("tags").get(0).asText().endsWith("-controller"));
+                    }
+                }));
         var registered =
                 bean(org.springframework.security.oauth2.server.authorization.client
                                 .RegisteredClientRepository.class)

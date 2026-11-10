@@ -30,7 +30,7 @@ public class OpenApiConfiguration {
                                 .title("ISTAD IAM API")
                                 .version("1.0")
                                 .description(
-                                        "Click Authorize and sign in with your IAM account."
+                                        "Start with the Authorization collection to obtain an access token, then select bearerToken to test API requests."
                                             + " Administrative operations require resource:action"
                                             + " permissions. 401 means invalid authentication; 403"
                                             + " means insufficient permission."))

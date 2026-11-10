@@ -15,12 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@io.swagger.v3.oas.annotations.tags.Tag(name="Registration", description="Create an account without an access token.")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class RegistrationController {
     private final RegisterUserUseCase registerUserUseCase;
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Register account")
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public Responses.User register(@Valid @RequestBody Requests.Register request) {

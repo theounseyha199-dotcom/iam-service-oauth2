@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+@io.swagger.v3.oas.annotations.tags.Tag(name="Roles", description="Manage roles and their permissions.")
 @RestController
 @RequestMapping("/api/roles")
 @RequiredArgsConstructor
@@ -52,6 +53,7 @@ public class RolesController {
     private final AssignPermissionsToRoleUseCase assignPermissionsToRoleUseCase;
     private final RevokePermissionFromRoleUseCase revokePermissionFromRoleUseCase;
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Create role")
     @PostMapping
     @PreAuthorize("hasAuthority('role:create')")
     @ResponseStatus(HttpStatus.CREATED)
@@ -59,6 +61,7 @@ public class RolesController {
         return createRoleUseCase.execute(request.command());
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="List roles")
     @GetMapping
     @PreAuthorize("hasAuthority('role:read')")
     public PageResult<RoleSummary> list(
@@ -70,18 +73,21 @@ public class RolesController {
         return listRolesUseCase.execute(new RoleFilterQuery(page, size, sort, search, active));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Get role")
     @GetMapping("/{uuid}")
     @PreAuthorize("hasAuthority('role:read')")
     public RoleResult get(@PathVariable("uuid") UUID uuid) {
         return getRoleUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Update role")
     @PatchMapping("/{uuid}")
     @PreAuthorize("hasAuthority('role:update')")
     public RoleResult update(@PathVariable("uuid") UUID uuid, @Valid @RequestBody RolePatchRequest request) {
         return updateRoleUseCase.execute(request.command(uuid));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Delete role")
     @DeleteMapping("/{uuid}")
     @PreAuthorize("hasAuthority('role:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -89,6 +95,7 @@ public class RolesController {
         deleteRoleUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Activate role")
     @PostMapping("/{uuid}/activate")
     @PreAuthorize("hasAuthority('role:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -96,6 +103,7 @@ public class RolesController {
         activateRoleUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Deactivate role")
     @PostMapping("/{uuid}/deactivate")
     @PreAuthorize("hasAuthority('role:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -103,6 +111,7 @@ public class RolesController {
         deactivateRoleUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Assign permissions to role")
     @PostMapping("/{uuid}/permissions")
     @PreAuthorize("hasAuthority('role:assign')")
     public List<PermissionAssignmentResult> assignPermissions(
@@ -112,6 +121,7 @@ public class RolesController {
                         uuid, request.permissionUuids(), request.expiresAt(), request.reason()));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Remove role permission")
     @DeleteMapping("/{uuid}/permissions/{permissionUuid}")
     @PreAuthorize("hasAuthority('role:assign')")
     @ResponseStatus(HttpStatus.NO_CONTENT)

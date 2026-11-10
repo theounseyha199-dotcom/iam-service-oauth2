@@ -128,6 +128,17 @@ then sign in and approve consent. The preconfigured `iam-swagger` client uses PK
 **no client secret is needed**. Use an administrator account for administrative APIs.
 Expand an operation, click **Try it out**, fill its fields and click **Execute**.
 Alternatively, paste an existing access token into the `bearerToken` authorization.
+Scalar API Reference is available at [http://localhost:9000/scalar](http://localhost:9000/scalar).
+It uses the same OpenAPI specification as Swagger UI. To test authenticated requests,
+select the `bearerToken` security option and paste your JWT access token. API permissions
+still apply; opening the documentation does not grant API access. Scalar's JavaScript
+is served locally at `/scalar/scalar.js`.
+
+Collections are organized as Authorization, Registration, My Account, Users, Roles,
+and Permissions. Endpoint titles use action names such as Get my profile and List
+users. Authorization documents the browser sign-in flow, token exchange, revocation,
+introspection, and public signing keys; these endpoints are owned by Spring Security.
+
 The OpenAPI JSON is at `/v3/api-docs`. Public registration needs no token.
 Authorization is not persisted across page reloads. When using a different host or
 port, set `IAM_ISSUER` to that application's external URL before startup so the

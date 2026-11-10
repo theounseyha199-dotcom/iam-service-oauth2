@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   ISTAD Login — Modern Glassmorphism Design
+   ISTAD Identity — Shared Design Tokens
    ═══════════════════════════════════════════════════════════ */
 
 /* ── Design Tokens ── */
@@ -31,7 +31,7 @@
 
     /* Semantic */
     --ink:     var(--gray-900);
-    --muted:   var(--gray-500);
+    --muted:   var(--gray-600);
     --surface: #ffffff;
     --border:  var(--gray-200);
     --danger:  #dc2626;

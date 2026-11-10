@@ -91,6 +91,8 @@ public class SecurityConfig {
                                                 "/v3/api-docs/**",
                                                 "/swagger-ui/**",
                                                 "/swagger-ui.html",
+                                                "/scalar",
+                                                "/scalar/**",
                                                 "/css/**",
                                                 "/js/**")
                                         .permitAll()

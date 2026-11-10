@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+@io.swagger.v3.oas.annotations.tags.Tag(name="My Account", description="Manage the account associated with your access token.")
 @RestController
 @RequestMapping("/api/me")
 @RequiredArgsConstructor
@@ -49,6 +50,7 @@ public class MeController {
         }
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Get my profile")
     @GetMapping
     public Responses.User get(
             @org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -56,6 +58,7 @@ public class MeController {
         return Responses.user(getUserUseCase.execute(subject(jwt)));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Update my profile")
     @PatchMapping
     public Responses.User update(
             @org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -64,6 +67,7 @@ public class MeController {
         return Responses.user(updateUserProfileUseCase.execute(request.command(subject(jwt))));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Change my password")
     @PutMapping("/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(
@@ -73,6 +77,7 @@ public class MeController {
         changePasswordUseCase.execute(request.command(subject(jwt)));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="List my sign-in methods")
     @GetMapping("/identities")
     public List<Responses.Identity> identities(
             @org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -80,6 +85,7 @@ public class MeController {
         return listUserIdentitiesUseCase.execute(subject(jwt)).stream().map(Responses::identity).toList();
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Unlink my sign-in method")
     @DeleteMapping("/identities/{identityUuid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unlink(

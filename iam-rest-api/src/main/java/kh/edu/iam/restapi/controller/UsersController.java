@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+@io.swagger.v3.oas.annotations.tags.Tag(name="Users", description="Manage user accounts and access.")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -71,6 +72,7 @@ public class UsersController {
     private final ListUserIdentitiesUseCase listUserIdentitiesUseCase;
     private final UnlinkIdentityUseCase unlinkIdentityUseCase;
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Create user")
     @PostMapping
     @PreAuthorize("hasAuthority('user:create')")
     @ResponseStatus(HttpStatus.CREATED)
@@ -78,6 +80,7 @@ public class UsersController {
         return Responses.user(createUserUseCase.execute(request.command()));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="List users")
     @GetMapping
     @PreAuthorize("hasAuthority('user:read')")
     public PageResult<UserSummary> list(
@@ -90,18 +93,21 @@ public class UsersController {
         return listUsersUseCase.execute(new UserFilterQuery(page, size, sort, search, enabled, locked));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Get user")
     @GetMapping("/{uuid}")
     @PreAuthorize("hasAuthority('user:read')")
     public Responses.User get(@PathVariable("uuid") UUID uuid) {
         return Responses.user(getUserUseCase.execute(uuid));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Update user")
     @PatchMapping("/{uuid}")
     @PreAuthorize("hasAuthority('user:update')")
     public Responses.User update(@PathVariable("uuid") UUID uuid, @Valid @RequestBody ProfileRequest request) {
         return Responses.user(updateUserProfileUseCase.execute(request.command(uuid)));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Delete user")
     @DeleteMapping("/{uuid}")
     @PreAuthorize("hasAuthority('user:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -109,6 +115,7 @@ public class UsersController {
         deleteUserUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Enable user")
     @PostMapping("/{uuid}/enable")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -116,6 +123,7 @@ public class UsersController {
         enableUserUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Disable user")
     @PostMapping("/{uuid}/disable")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -123,6 +131,7 @@ public class UsersController {
         disableUserUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Lock user")
     @PostMapping("/{uuid}/lock")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -130,6 +139,7 @@ public class UsersController {
         lockUserUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Unlock user")
     @PostMapping("/{uuid}/unlock")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -137,6 +147,7 @@ public class UsersController {
         unlockUserUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Reset user password")
     @PutMapping("/{uuid}/password")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -144,12 +155,14 @@ public class UsersController {
         resetUserPasswordUseCase.execute(request.command(uuid));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Get user permissions and roles")
     @GetMapping("/{uuid}/authorities")
     @PreAuthorize("hasAuthority('user:read')")
     public Responses.Authorities authorities(@PathVariable("uuid") UUID uuid) {
         return Responses.authorities(getUserAuthoritiesUseCase.execute(uuid));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Assign roles to user")
     @PostMapping("/{uuid}/roles")
     @PreAuthorize("hasAuthority('user:assign')")
     public List<RoleAssignmentResult> assignRoles(
@@ -158,6 +171,7 @@ public class UsersController {
                 new AssignRolesToUserCommand(uuid, request.roleUuids(), request.expiresAt(), request.reason()));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Grant user permissions")
     @PostMapping("/{uuid}/permissions")
     @PreAuthorize("hasAuthority('user:assign')")
     public List<PermissionGrantResult> grantPermissions(
@@ -167,6 +181,7 @@ public class UsersController {
                         uuid, request.permissionUuids(), request.effect(), request.expiresAt(), request.reason()));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Remove user role")
     @DeleteMapping("/{uuid}/roles/{roleUuid}")
     @PreAuthorize("hasAuthority('user:assign')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -177,6 +192,7 @@ public class UsersController {
         revokeRoleFromUserUseCase.execute(uuid, roleUuid, request.reason());
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Revoke user permission")
     @DeleteMapping("/{uuid}/permissions/{permissionUuid}")
     @PreAuthorize("hasAuthority('user:assign')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -187,12 +203,14 @@ public class UsersController {
         revokePermissionFromUserUseCase.execute(uuid, permissionUuid, request.reason());
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="List user sign-in methods")
     @GetMapping("/{uuid}/identities")
     @PreAuthorize("hasAuthority('user:read')")
     public List<Responses.Identity> identities(@PathVariable("uuid") UUID uuid) {
         return listUserIdentitiesUseCase.execute(uuid).stream().map(Responses::identity).toList();
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Unlink user sign-in method")
     @DeleteMapping("/{uuid}/identities/{identityUuid}")
     @PreAuthorize("hasAuthority('user:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)

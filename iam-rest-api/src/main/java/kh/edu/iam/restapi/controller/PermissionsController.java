@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+@io.swagger.v3.oas.annotations.tags.Tag(name="Permissions", description="Manage available permissions.")
 @RestController
 @RequestMapping("/api/permissions")
 @RequiredArgsConstructor
@@ -44,6 +45,7 @@ public class PermissionsController {
     private final ActivatePermissionUseCase activatePermissionUseCase;
     private final DeactivatePermissionUseCase deactivatePermissionUseCase;
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Create permission")
     @PostMapping
     @PreAuthorize("hasAuthority('permission:create')")
     @ResponseStatus(HttpStatus.CREATED)
@@ -51,6 +53,7 @@ public class PermissionsController {
         return createPermissionUseCase.execute(request.command());
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="List permissions")
     @GetMapping
     @PreAuthorize("hasAuthority('permission:read')")
     public PageResult<PermissionResult> list(
@@ -65,12 +68,14 @@ public class PermissionsController {
                 new PermissionFilterQuery(page, size, sort, search, resource, action, active));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Get permission")
     @GetMapping("/{uuid}")
     @PreAuthorize("hasAuthority('permission:read')")
     public PermissionResult get(@PathVariable("uuid") UUID uuid) {
         return getPermissionUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Update permission")
     @PatchMapping("/{uuid}")
     @PreAuthorize("hasAuthority('permission:update')")
     public PermissionResult update(
@@ -78,6 +83,7 @@ public class PermissionsController {
         return updatePermissionUseCase.execute(request.command(uuid));
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Delete permission")
     @DeleteMapping("/{uuid}")
     @PreAuthorize("hasAuthority('permission:delete')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -85,6 +91,7 @@ public class PermissionsController {
         deletePermissionUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Activate permission")
     @PostMapping("/{uuid}/activate")
     @PreAuthorize("hasAuthority('permission:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -92,6 +99,7 @@ public class PermissionsController {
         activatePermissionUseCase.execute(uuid);
     }
 
+    @io.swagger.v3.oas.annotations.Operation(summary="Deactivate permission")
     @PostMapping("/{uuid}/deactivate")
     @PreAuthorize("hasAuthority('permission:update')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
