@@ -536,6 +536,12 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
             String location = response.headers().firstValue("Location").orElseThrow();
             assertTrue(location.contains("state="), provider);
             assertTrue(location.contains("client_id=test-" + provider), location);
+            if (provider.equals("facebook")) {
+                String query = java.net.URLDecoder.decode(
+                        java.net.URI.create(location).getRawQuery(), java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(query.contains("scope=public_profile&"), query);
+                assertFalse(query.contains("email"), query);
+            }
             if (!provider.equals("facebook")) {
                 assertTrue(location.contains("code_challenge="), provider);
             }
