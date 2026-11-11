@@ -69,10 +69,12 @@ public class SocialProvidersConfig {
                                 .userInfoUri("https://api.github.com/user")
                                 .userNameAttributeName("id");
                 case "facebook" ->
-                        b.scope("public_profile", "email")
+                        // Collect email through the existing profile-completion flow.
+                        // This Meta app does not have access to the email permission.
+                        b.scope("public_profile")
                                 .authorizationUri("https://www.facebook.com/dialog/oauth")
                                 .tokenUri("https://graph.facebook.com/oauth/access_token")
-                                .userInfoUri("https://graph.facebook.com/me?fields=id,name,first_name,last_name,email")
+                                .userInfoUri("https://graph.facebook.com/me?fields=id,name,first_name,last_name")
                                 .userNameAttributeName("id")
                                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST);
                 case "telegram" ->
