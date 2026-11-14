@@ -66,7 +66,7 @@ completion form; linking is bound to the signed-in owner and original server sta
 
 ## Step 9: Render browser pages
 
-JTE controllers call the same use cases as REST. Shared layout/field/notice/CSRF
+Browser controllers call the same use cases as REST. Shared React layout/Field/Notice/Form
 partials keep forms consistent. Message bundles own visible English/Khmer text.
 Save actions redirect with success; invalid input preserves safe fields; secrets
 are cleared. Unlink and connected-app revocation require confirmation and CSRF.
@@ -77,5 +77,5 @@ Dirty edits use an accessible dialog before in-app navigation.
 The full test command creates disposable PostgreSQL clusters, applies migrations,
 checks the complete REST workflow and OAuth lifecycle, opens Chromium for account
 flows and mobile/locale checks, then starts the packaged JAR from outside the source
-tree to prove templates are bundled. Static audits check module boundaries,
+tree to prove the React entry and assets are bundled. Static audits check module boundaries,
 required classes/routes/pages, message-key parity, and empty Postman secrets.

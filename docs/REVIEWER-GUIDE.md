@@ -16,7 +16,7 @@ Use root `compose.yaml`; the old deployment folder serves the author's other pro
    safe response mapping, JWT validation and exact permission requirements.
 6. Read the infrastructure security/client configuration for PKCE, scoped claims,
    persisted clients/grants and the two accepted Postman callbacks.
-7. Inspect the JTE templates and English/Khmer bundles in `iam-web`.
+7. Inspect the React components and English/Khmer bundles in `iam-web`.
 8. Run the README's verification command and import the portable Postman files.
 
 ## Minimal acceptance flow

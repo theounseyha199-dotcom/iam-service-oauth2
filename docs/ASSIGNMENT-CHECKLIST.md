@@ -26,7 +26,7 @@ test evidence, not a prediction of the instructor's awarded score.
 | E.2: sub/claims/authorities | TokenConfig | decoded JWT, UserInfo and scoped ID claims assertions |
 | E.3: dynamic client registration | OIDC registration endpoint + ClientRegistrationPolicy | initial token, POST 201, registration-token GET and scope rejection |
 | E.4: four providers | SocialProvidersConfig, mapper, state repository, login handler | four starts, PKCE/state and seven mapper tests |
-| F: all eight pages | iam-web/src/main/jte | HTTP page checks + precompiled JAR verification |
+| F: all eight pages | iam-web/iam-web-reactjs/src | HTTP page checks + precompiled JAR verification |
 | F: English/Khmer and lang switch | messages.properties/messages_km.properties, BrowserConfig/Page | key parity, locale HTTP and browser tests |
 | Best practices: inner layers, single-responsibility use cases | application classes and output ports | static audit |
 | Best practices: audit, soft delete, version, environment secrets | domain/persistence/configuration | locking/deletion tests and static config audit |
