@@ -51,6 +51,20 @@ abstract class IamIntegrationTestSupport {
     protected static final String PASSWORD = "Str0ng!Pass2026";
 
     private static Path cluster;
+    private static String redisContainer;
+
+    private static String docker(String... args) throws Exception {
+        var command = new java.util.ArrayList<String>();
+        command.add("docker"); command.addAll(List.of(args));
+        var process = new ProcessBuilder(command).redirectErrorStream(true).start();
+        if (!process.waitFor(30, TimeUnit.SECONDS)) {
+            process.destroyForcibly(); throw new IllegalStateException("Test Redis command timed out");
+        }
+        String output = new String(process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).strip();
+        if (process.exitValue() != 0) throw new IllegalStateException("Test Redis command failed: " + output);
+        return output;
+    }
+
 
     protected static boolean databaseTestsEnabled() {
         return Boolean.getBoolean("iam.part2.integration") || System.getenv("IAM_TEST_DB_URL") != null;
@@ -96,11 +110,27 @@ abstract class IamIntegrationTestSupport {
         if (!url.matches(".*/iam_part2_test(?:\\?.*)?")) {
             throw new IllegalArgumentException("Tests require a disposable database named iam_part2_test");
         }
+        redisContainer = "iam-test-redis-" + UUID.randomUUID();
+        docker("run", "--detach", "--rm", "--name", redisContainer,
+                "--publish", "127.0.0.1::6379", "redis:7.4-alpine");
+        String mapping = docker("port", redisContainer, "6379/tcp");
+        String redisPort = mapping.substring(mapping.lastIndexOf(':') + 1);
+        for (int retry = 0; ; retry++) {
+            try { if (docker("exec", redisContainer, "redis-cli", "ping").equals("PONG")) break; }
+            catch (IllegalStateException ex) { if (retry == 30) throw ex; }
+            Thread.sleep(100);
+        }
         context =
                 new SpringApplicationBuilder(IamServiceApplication.class)
                         .run(
                                 "--spring.main.web-application-type=servlet",
                                 "--server.port=0",
+                                "--spring.mail.host=127.0.0.1",
+                                "--spring.mail.port=1",
+                                "--spring.mail.test-connection=false",
+                                "--spring.data.redis.host=127.0.0.1",
+                                "--spring.data.redis.port=" + redisPort,
+                                "--spring.data.redis.password=",
                                 "--GOOGLE_CLIENT_ID=test-google",
                                 "--GOOGLE_CLIENT_SECRET=test-google-secret",
                                 "--GITHUB_CLIENT_ID=test-github",
@@ -128,6 +158,10 @@ abstract class IamIntegrationTestSupport {
         if (context != null) {
             context.close();
         }
+        if (redisContainer != null) {
+            docker("stop", redisContainer);
+            redisContainer = null;
+        }
         if (cluster != null) {
             try {
                 command("pg_ctl", "-D", cluster.resolve("data").toString(), "-m", "fast", "-w", "stop");
@@ -154,8 +188,16 @@ abstract class IamIntegrationTestSupport {
 
     protected UserResult register() {
         var name = unique();
-        return bean(RegisterUserUseCase.class)
+        var result = bean(RegisterUserUseCase.class)
                 .execute(new RegisterUserCommand(name, name + "@example.com", PASSWORD, PASSWORD, "Dara", "Sok", "km"));
+        bean(kh.edu.iam.application.port.out.TransactionRunner.class).required(() -> {
+            var repository = bean(kh.edu.iam.application.port.out.UserRepository.class);
+            var user = repository.lockByUuid(result.uuid()).orElseThrow();
+            user.verifyEmail("test-fixture", java.time.Instant.now());
+            repository.save(user);
+            return null;
+        });
+        return bean(kh.edu.iam.application.user.usecase.GetUserUseCase.class).execute(result.uuid());
     }
 
     protected kh.edu.iam.application.permission.result.PermissionResult permission() {

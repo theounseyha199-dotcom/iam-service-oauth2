@@ -17,6 +17,8 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-mail'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-redis'
     testImplementation 'org.springframework.security:spring-security-core'
     testImplementation 'org.springframework.security:spring-security-oauth2-jose'
     testImplementation 'org.springframework.security:spring-security-oauth2-authorization-server'

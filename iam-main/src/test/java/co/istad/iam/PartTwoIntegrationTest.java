@@ -92,14 +92,14 @@ class PartTwoIntegrationTest extends IamIntegrationTestSupport {
                 jdbc.queryForObject(
                         "select count(*) from information_schema.tables where table_schema='public' and table_name in ('users','roles','permissions','identities','user_roles','role_permissions','user_permissions')",
                         Integer.class));
-        assertEquals(14, jdbc.queryForObject("select count(*) from permissions where is_system", Integer.class));
+        assertEquals(21, jdbc.queryForObject("select count(*) from permissions where is_system", Integer.class));
         assertEquals(2, jdbc.queryForObject("select count(*) from roles where is_system", Integer.class));
         assertEquals(
-                14,
+                21,
                 jdbc.queryForObject(
                         "select count(*) from role_permissions a join roles r on r.id=a.role_id where r.name='ADMIN'",
                         Integer.class));
-        assertEquals(8, jdbc.queryForObject("select count(*) from databasechangelog", Integer.class));
+        assertEquals(12, jdbc.queryForObject("select count(*) from databasechangelog", Integer.class));
         assertEquals(
                 39,
                 context.getBeansOfType(Object.class).values().stream()

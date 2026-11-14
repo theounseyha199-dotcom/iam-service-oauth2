@@ -198,10 +198,36 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         return token(register().uuid(), names);
     }
 
+    private String reactPayload(String html) {
+        var match = Pattern.compile("<script id=\"iam-page\" type=\"application/json\">(.*?)</script>", Pattern.DOTALL).matcher(html);
+        assertTrue(match.find());
+        return match.group(1);
+    }
+
     private String csrf(String html) {
-        var matcher = Pattern.compile("name=\"_csrf\" value=\"([^\"]+)\"").matcher(html);
+        var matcher = Pattern.compile("\"csrfToken\":\"([^\"]+)\"").matcher(html);
         assertTrue(matcher.find(), "A CSRF token must be rendered");
         return matcher.group(1);
+    }
+
+    @Test
+    void reactBootstrapEscapesUserInputAndDoesNotExposePasswordOrMvcInternals() throws Exception {
+        var browser = client();
+        var login = send(browser, "GET", "/login", null, null, null);
+        String injected = "</script><script>window.injected=true</script>";
+        var response = send(browser, "POST", "/register", form(Map.of(
+                "_csrf", csrf(login.body()), "username", injected, "email", "invalid",
+                "givenName", "Test", "familyName", "User", "password", "never-echo-this-secret",
+                "confirmPassword", "mismatch")), null, "application/x-www-form-urlencoded");
+        assertEquals(400, response.statusCode());
+        assertFalse(response.body().contains(injected));
+        assertFalse(response.body().contains("never-echo-this-secret"));
+        assertFalse(response.body().contains("BindingResult"));
+        var payload = json.readTree(reactPayload(response.body()));
+        assertEquals(injected, payload.path("data").path("values").path("username").asText());
+        assertEquals("register", payload.path("page").asText());
+        assertFalse(payload.path("csrfToken").asText().isBlank());
+        assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
     }
 
     private HttpClient login(UserResult user) throws Exception {
@@ -486,7 +512,7 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         null,
                         "application/x-www-form-urlencoded");
         assertEquals(400, invalid.statusCode(), invalid.body());
-        assertTrue(invalid.body().contains("aria-invalid=\"true\""));
+        assertFalse(json.readTree(reactPayload(invalid.body())).path("data").path("errors").isEmpty());
         assertFalse(invalid.body().contains("value=\"short\""));
         var user = register();
         browser = login(user);
@@ -500,6 +526,10 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
             var page = send(browser, "GET", route, null, null, null);
             assertEquals(200, page.statusCode(), () -> route + ": " + page.body());
             assertFalse(page.body().contains("passwordHash"));
+            var accountData = json.readTree(reactPayload(page.body())).path("data");
+            assertEquals(user.username(), accountData.path("claims").path("username").asText());
+            assertTrue(accountData.path("roles").isArray());
+            assertTrue(accountData.path("permissions").isArray());
         }
         var edit = send(browser, "GET", "/profile/edit", null, null, null);
         var stale =
@@ -524,7 +554,7 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         null,
                         "application/x-www-form-urlencoded");
         assertEquals(409, stale.statusCode(), stale.body());
-        assertTrue(stale.body().contains("/profile/edit"));
+        assertTrue(stale.body().contains("concurrent_update"));
     }
 
     @Test
@@ -546,6 +576,41 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                 assertTrue(location.contains("code_challenge="), provider);
             }
         }
+    }
+
+    @Test
+    void linkedAccountAuthorizationKeepsOwnerSessionAfterProviderCancellation() throws Exception {
+        var browser = login(register());
+        var accounts = send(browser, "GET", "/profile/accounts", null, null, null);
+        assertEquals(200, accounts.statusCode());
+        var start = send(browser, "POST", "/profile/accounts/link/google",
+                form(Map.of("_csrf", csrf(accounts.body()))), null, "application/x-www-form-urlencoded");
+        assertEquals(302, start.statusCode(), start.body());
+        var location = URI.create(start.headers().firstValue("Location").orElseThrow());
+        assertEquals("accounts.google.com", location.getHost());
+        String state = java.util.Arrays.stream(location.getRawQuery().split("&"))
+                .filter(value -> value.startsWith("state=")).findFirst().orElseThrow().substring(6);
+        var cancelled = send(browser, "GET", "/login/oauth2/code/google?error=access_denied&state=" + state,
+                null, null, null);
+        assertEquals(302, cancelled.statusCode());
+        assertTrue(cancelled.headers().firstValue("Location").orElse("").endsWith("/profile/accounts?error"));
+        var failure = send(browser, "GET", "/profile/accounts?error", null, null, null);
+        assertEquals(200, failure.statusCode());
+        assertEquals("provider_link_cancelled", json.readTree(reactPayload(failure.body())).path("data").path("errorCode").asText());
+        var refreshed = send(browser, "GET", "/profile/accounts?error&errorCode=provider_link_conflict", null, null, null);
+        assertFalse(json.readTree(reactPayload(refreshed.body())).path("data").has("errorCode"));
+    }
+
+    @Test
+    void rejectedLinkCallbackDoesNotSignOutExistingOwner() throws Exception {
+        var browser = login(register());
+        var callback = send(browser, "GET", "/login/oauth2/code/google?code=untrusted&state=unknown",
+                null, null, null);
+        assertEquals(302, callback.statusCode());
+        assertTrue(callback.headers().firstValue("Location").orElse("").endsWith("/profile/accounts?error"));
+        var accounts = send(browser, "GET", "/profile/accounts?error", null, null, null);
+        assertEquals(200, accounts.statusCode());
+        assertEquals("provider_link_session", json.readTree(reactPayload(accounts.body())).path("data").path("errorCode").asText());
     }
 
     private record Grant(
@@ -794,8 +859,25 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                         .directory(root.toFile())
                         .redirectErrorStream(true);
         process.environment().put("IAM_BROWSER_URL", origin());
-        process.environment().put("IAM_BROWSER_USERNAME", unique());
+        process.environment().put("IAM_BROWSER_USERNAME", register().username());
         process.environment().put("IAM_BROWSER_PASSWORD", PASSWORD);
+        var connectedUser = register();
+        for (var provider : List.of(IdentityProvider.GOOGLE, IdentityProvider.GITHUB,
+                IdentityProvider.FACEBOOK, IdentityProvider.TELEGRAM)) {
+            bean(LinkIdentityUseCase.class).execute(connectedUser.uuid(),
+                    identity(provider, unique(), connectedUser.email()));
+        }
+        process.environment().put("IAM_BROWSER_LINKED_USERNAME", connectedUser.username());
+        String otpName = unique();
+        var otpUser = bean(kh.edu.iam.application.user.usecase.RegisterUserUseCase.class).execute(
+                new kh.edu.iam.application.user.command.RegisterUserCommand(otpName, otpName + "@example.com",
+                        PASSWORD, PASSWORD, "OTP", "Browser", "en"));
+        var redis = bean(org.springframework.data.redis.core.StringRedisTemplate.class);
+        redis.delete(List.of(kh.edu.iam.infrastructure.security.RedisVerificationCodes.key(otpUser.uuid()),
+                kh.edu.iam.infrastructure.security.RedisVerificationCodes.cooldownKey(otpUser.uuid())));
+        bean(kh.edu.iam.infrastructure.security.RedisVerificationCodes.class).issue(otpUser.uuid(), otpUser.email(), "123456");
+        process.environment().put("IAM_BROWSER_OTP_EMAIL", otpUser.email());
+        process.environment().put("IAM_BROWSER_OTP_CODE", "123456");
         var log = root.resolve("verification/browser-process.log");
         java.nio.file.Files.createDirectories(log.getParent());
         var running = process.redirectOutput(log.toFile()).start();
@@ -826,7 +908,7 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
     @org.junit.jupiter.api.condition.EnabledIfSystemProperty(
             named = "iam.packaged.checks",
             matches = "true")
-    void packagedJarRendersPrecompiledTemplatesOutsideTheSourceTree() throws Exception {
+    void packagedJarRendersReactOutsideTheSourceTree() throws Exception {
         var directory = java.nio.file.Files.createTempDirectory("iam-packaged-check-");
         var log = directory.resolve("application.log");
         var process =
@@ -876,6 +958,8 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
                                     HttpResponse.BodyHandlers.ofString());
             assertEquals(200, response.statusCode(), response.body());
             assertTrue(response.body().contains("ចូលគណនី"));
+            assertTrue(response.body().contains("id=\"iam-page\""));
+            assertTrue(response.body().contains("/react/assets/"));
         } finally {
             process.destroy();
             if (!process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)) {
@@ -902,6 +986,214 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         var profile = send(browser, "GET", "/", null, null, null);
         assertEquals(302, profile.statusCode());
         assertTrue(profile.headers().firstValue("Location").orElse("").contains("/login"));
+    }
+
+    private UserResult workspaceAdmin() {
+        var admin=register();
+        bean(kh.edu.iam.application.user.usecase.AssignRolesToUserUseCase.class).execute(
+                new kh.edu.iam.application.user.command.AssignRolesToUserCommand(admin.uuid(),
+                        List.of(UUID.fromString("00000000-0000-0000-0000-000000000001")),null,"Workspace fixture"));
+        return admin;
+    }
+    private HttpResponse<String> workspace(HttpClient browser,String csrf,String method,String path,Object body) throws Exception {
+        var request=HttpRequest.newBuilder(URI.create(origin()+"/workspace/api"+path))
+                .header("Content-Type","application/json").header("X-CSRF-TOKEN",csrf)
+                .method(method,body==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body))).build();
+        return browser.send(request,HttpResponse.BodyHandlers.ofString());
+    }
+    @Test
+    void deactivationReviewRequiresPermissionAndCurrentVersionAndRevokesAccess() throws Exception {
+        var grant = authorizationCodeGrant();
+        var owner = grant.browser();
+        String ownerCsrf = csrf(send(owner, "GET", "/", null, null, null).body());
+        assertEquals(200, send(client(), "GET", "/api/me", null, grant.accessToken(), null).statusCode());
+        assertEquals(202, workspace(owner, ownerCsrf, "POST", "/deactivation", Map.of("reason", "Please review")).statusCode());
+        var admin = workspaceAdmin();
+        var reviewer = login(admin);
+        String reviewerCsrf = csrf(send(reviewer, "GET", "/", null, null, null).body());
+        String path = "/deactivation/" + grant.user().uuid() + "/review";
+        var reject = Map.of("decision", "REJECTED", "reason", "Please confirm your request", "version", 0);
+        assertEquals(403, workspace(owner, ownerCsrf, "POST", path, reject).statusCode());
+        assertEquals(403, send(reviewer, "POST", "/workspace/api" + path,
+                json.writeValueAsString(reject), null, "application/json").statusCode());
+        assertEquals(400, workspace(reviewer, reviewerCsrf, "POST", path,
+                Map.of("decision", "REJECTED", "reason", " ", "version", 0)).statusCode());
+        assertEquals(400, workspace(reviewer, reviewerCsrf, "POST", path,
+                Map.of("decision", "REJECTED", "reason", "Missing version")).statusCode());
+        assertEquals(409, workspace(reviewer, reviewerCsrf, "POST", path,
+                Map.of("decision", "REJECTED", "reason", "Stale version", "version", 99)).statusCode());
+        assertEquals(204, workspace(reviewer, reviewerCsrf, "POST", path, reject).statusCode());
+        assertEquals(409, workspace(reviewer, reviewerCsrf, "POST", path, reject).statusCode());
+        var state = tree(workspace(owner, ownerCsrf, "GET", "/deactivation/mine", null));
+        assertEquals("REJECTED", state.path("status").asText());
+        assertEquals("Please confirm your request", state.path("review_note").asText());
+        assertFalse(state.path("pending").asBoolean());
+        assertEquals(200, send(client(), "GET", "/api/me", null, grant.accessToken(), null).statusCode());
+        assertEquals(202, workspace(owner, ownerCsrf, "POST", "/deactivation", Map.of("reason", "Confirmed")).statusCode());
+        state = tree(workspace(owner, ownerCsrf, "GET", "/deactivation/mine", null));
+        assertEquals("PENDING", state.path("status").asText());
+        assertTrue(state.path("review_note").isNull());
+        assertEquals(204, workspace(reviewer, reviewerCsrf, "POST", path,
+                Map.of("decision", "APPROVED", "reason", "Owner confirmed", "version", state.path("version").asLong())).statusCode());
+        assertFalse(bean(kh.edu.iam.application.user.usecase.GetUserUseCase.class).execute(grant.user().uuid()).enabled());
+        assertEquals(401, workspace(owner, ownerCsrf, "GET", "/overview", null).statusCode());
+        assertEquals(401, send(client(), "GET", "/api/me", null, grant.accessToken(), null).statusCode());
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM oauth2_authorization WHERE principal_name = ?",
+                Integer.class, grant.user().username()));
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM iam_activity WHERE subject = ? AND event = 'deactivation_approved' AND target = ?",
+                Integer.class, admin.uuid().toString(), "/users/" + grant.user().uuid()));
+        assertEquals(202, workspace(reviewer, reviewerCsrf, "POST", "/deactivation", Map.of("reason", "Own request")).statusCode());
+        assertEquals(403, workspace(reviewer, reviewerCsrf, "POST", "/deactivation/" + admin.uuid() + "/review", reject).statusCode());
+    }
+
+    @Test
+    void activityFiltersAreBoundedAndCannotExposeOtherAccounts() throws Exception {
+        var user = register();
+        var browser = login(user);
+        String csrf = csrf(send(browser, "GET", "/", null, null, null).body());
+        var admin = login(workspaceAdmin());
+        String adminCsrf = csrf(send(admin, "GET", "/", null, null, null).body());
+        for (int attempt = 0; attempt < 5; attempt++) {
+            jdbc.update("INSERT INTO iam_activity(subject, event, success, target) VALUES (?, 'login', FALSE, '/login')", user.uuid().toString());
+        }
+        String query = "/activity?event=login&success=false&suspicious=true&target=%2Flogin&actor=" + user.uuid();
+        var suspicious = workspace(admin, adminCsrf, "GET", query + "&audit=true", null);
+        assertEquals(200, suspicious.statusCode(), suspicious.body());
+        assertEquals(1, tree(suspicious).path("content").size());
+        assertTrue(tree(suspicious).path("content").get(0).path("suspicious").asBoolean());
+        assertEquals(0, tree(workspace(browser, csrf, "GET", "/activity?actor=" + UUID.randomUUID(), null)).path("content").size());
+        assertEquals(403, workspace(browser, csrf, "GET", query + "&audit=true", null).statusCode());
+        assertEquals(400, workspace(admin, adminCsrf, "GET", "/activity?audit=true&from=2026-02-02&to=2026-01-01", null).statusCode());
+        assertEquals(400, workspace(admin, adminCsrf, "GET", "/activity?audit=true&actor=invalid", null).statusCode());
+        assertEquals(400, workspace(admin, adminCsrf, "GET", "/activity?page=2147483647", null).statusCode());
+        assertEquals(0, tree(workspace(admin, adminCsrf, "GET", "/activity?audit=true&event=%25", null)).path("content").size());
+        assertEquals(0, tree(workspace(admin, adminCsrf, "GET", "/activity?audit=true&to=2000-01-01", null)).path("content").size());
+    }
+
+    @Test void workspaceRequiresSessionCsrfFreshPermissionsAndSessionOwnership() throws Exception {
+        assertEquals(401,send(client(),"GET","/workspace/api/overview",null,null,null).statusCode());
+        var owner=register();var browser=login(owner);
+        String csrf=csrf(send(browser,"GET","/",null,null,null).body());
+        assertEquals(403,workspace(browser,csrf,"GET","/users",null).statusCode());
+        assertEquals(403,workspace(browser,csrf,"GET","/policy",null).statusCode());
+        assertEquals(403,workspace(browser,csrf,"GET","/activity?audit=true",null).statusCode());
+        var other=register();
+        assertEquals(403,workspace(browser,csrf,"GET","/sessions?user="+other.uuid(),null).statusCode());
+        assertEquals(403,send(browser,"POST","/workspace/api/deactivation","{\"reason\":\"test\"}",null,"application/json").statusCode());
+        assertEquals(202,workspace(browser,csrf,"POST","/deactivation",Map.of("reason","Requested by account owner")).statusCode());
+        var sessionRows=tree(workspace(browser,csrf,"GET","/sessions",null));
+        assertTrue(sessionRows.isArray());assertFalse(sessionRows.isEmpty());
+        assertEquals(64,sessionRows.get(0).get("id").asText().length());
+        assertTrue(tree(workspace(browser,csrf,"GET","/activity?event=login",null)).get("content").size()>0);
+        var admin=workspaceAdmin();var adminBrowser=login(admin);
+        String adminCsrf=csrf(send(adminBrowser,"GET","/",null,null,null).body());
+        assertEquals(200,workspace(adminBrowser,adminCsrf,"GET","/users",null).statusCode());
+        jdbc.update("UPDATE user_roles SET revoked_at=CURRENT_TIMESTAMP,revoked_by='test' WHERE user_id=(SELECT id FROM users WHERE uuid=?) AND role_id=(SELECT id FROM roles WHERE name='ADMIN')",admin.uuid());
+        assertEquals(403,workspace(adminBrowser,adminCsrf,"GET","/users",null).statusCode());
+        assertEquals(204,workspace(browser,csrf,"DELETE","/sessions/all",null).statusCode());
+        assertEquals(401,workspace(browser,csrf,"GET","/overview",null).statusCode());
+    }
+    @Test void workspaceClientCrudPoliciesAndUsernameUpdatesAreIntegrated() throws Exception {
+        var admin=workspaceAdmin();var browser=login(admin);
+        String csrf=csrf(send(browser,"GET","/",null,null,null).body());
+        String clientId=unique();
+        var input=new LinkedHashMap<String,Object>();
+        input.put("clientId",clientId);input.put("clientName","Workspace test client");input.put("confidential",true);
+        input.put("clientSecret","workspace-secret-1234567890");input.put("grantTypes",List.of("authorization_code","refresh_token"));
+        input.put("redirectUris",List.of("https://example.com/callback"));input.put("scopes",List.of("openid","profile"));
+        var created=workspace(browser,csrf,"POST","/clients",input);
+        assertEquals(201,created.statusCode(),created.body());assertFalse(created.body().contains("workspace-secret"));assertFalse(created.body().contains("$2"));
+        String id=tree(created).get("uuid").asText();
+        input.put("clientSecret","");input.put("clientName","Updated workspace client");
+        assertEquals(200,workspace(browser,csrf,"PUT","/clients/"+id,input).statusCode());
+        input.put("redirectUris",List.of("https://example.com/callback#fragment"));
+        assertEquals(400,workspace(browser,csrf,"PUT","/clients/"+id,input).statusCode());
+        assertEquals(204,workspace(browser,csrf,"DELETE","/clients/"+id,null).statusCode());
+        assertEquals(404,workspace(browser,csrf,"GET","/clients/"+id,null).statusCode());
+        var oldPolicy=tree(workspace(browser,csrf,"GET","/policy",null));
+        var policy=new LinkedHashMap<String,Object>();policy.put("sessionMinutes",45);policy.put("accessMinutes",7);policy.put("refreshMinutes",1500);
+        policy.put("passwordMinimum",16);policy.put("requireNumber",true);policy.put("requireUppercase",true);policy.put("requireConsent",true);policy.put("version",oldPolicy.get("version").asLong());
+        try {
+            assertEquals(200,workspace(browser,csrf,"PUT","/policy",policy).statusCode());
+            assertEquals(409,workspace(browser,csrf,"PUT","/policy",policy).statusCode());
+            assertThrows(kh.edu.iam.application.exception.ApplicationException.class,()->bean(kh.edu.iam.application.port.out.PasswordHasher.class).hash("Longpassword!"));
+        } finally {
+            jdbc.update("UPDATE iam_workspace_policy SET session_minutes=30,access_minutes=5,refresh_minutes=1440,password_minimum=8,require_number=FALSE,require_uppercase=FALSE,require_consent=TRUE,version=version+1 WHERE id=1");
+        }
+        var user=register();String renamed=unique();
+        var update=workspace(browser,csrf,"PATCH","/users/"+user.uuid(),Map.of("username",renamed,"version",user.version()));
+        assertEquals(200,update.statusCode(),update.body());assertEquals(renamed,tree(update).get("username").asText());
+        assertEquals(409,workspace(browser,csrf,"PATCH","/users/"+user.uuid(),Map.of("username",unique(),"version",user.version())).statusCode());
+        assertNotNull(login(bean(kh.edu.iam.application.user.usecase.GetUserUseCase.class).execute(user.uuid())));
+    }
+    @Test void accountSessionRevocationAndOwnRequestState() throws Exception {
+        var user = register();
+        var first = login(user); var second = login(user);
+        String token = csrf(send(first,"GET","/",null,null,null).body());
+        String secondToken = csrf(send(second,"GET","/",null,null,null).body());
+        var secondRows = tree(workspace(second,secondToken,"GET","/sessions",null));
+        String secondKey = null;
+        for (var row : secondRows) {
+            assertEquals("local", row.path("location").path("status").asText());
+            if (row.path("current").asBoolean()) secondKey = row.path("id").asText();
+        }
+        assertNotNull(secondKey);
+        assertEquals(204,workspace(first,token,"DELETE","/sessions/"+secondKey,null).statusCode());
+        assertEquals(401,workspace(second,secondToken,"GET","/overview",null).statusCode());
+        assertEquals(200,workspace(first,token,"GET","/overview",null).statusCode());
+        assertFalse(tree(workspace(first,token,"GET","/deactivation/mine",null)).path("pending").asBoolean());
+        assertEquals(202,workspace(first,token,"POST","/deactivation",Map.of("reason","Owner requested review")).statusCode());
+        var state = tree(workspace(first,token,"GET","/deactivation/mine",null));
+        assertTrue(state.path("pending").asBoolean());
+        assertEquals("Owner requested review",state.path("reason").asText());
+        assertEquals(202,workspace(first,token,"POST","/deactivation",Map.of("reason","Updated request")).statusCode());
+        assertEquals(1,jdbc.queryForObject("SELECT count(*) FROM iam_deactivation_request WHERE subject=?",Integer.class,user.uuid()));
+        assertTrue(bean(kh.edu.iam.application.user.usecase.GetUserUseCase.class).execute(user.uuid()).enabled());
+        var other = login(register());
+        String otherToken=csrf(send(other,"GET","/",null,null,null).body());
+        assertFalse(tree(workspace(other,otherToken,"GET","/deactivation/mine",null)).path("pending").asBoolean());
+        assertEquals(403,workspace(other,otherToken,"GET","/deactivation",null).statusCode());
+        assertEquals(403,workspace(other,otherToken,"DELETE","/sessions/"+secondKey+"?user="+user.uuid(),null).statusCode());
+        var third=login(user);String thirdToken=csrf(send(third,"GET","/",null,null,null).body());
+        assertEquals(204,workspace(first,token,"DELETE","/sessions/all",null).statusCode());
+        assertEquals(401,workspace(third,thirdToken,"GET","/overview",null).statusCode());
+        assertEquals(401,workspace(first,token,"GET","/overview",null).statusCode());
+    }
+
+    @Test void profileDuplicatesHaveFieldErrorsAndLoginHistoryIncludesFailures() throws Exception {
+        var user=register();var taken=register();var browser=login(user);
+        var edit=send(browser,"GET","/profile/edit",null,null,null);
+        String csrf=csrf(edit.body());
+        var input=new LinkedHashMap<String,String>();
+        input.put("_csrf",csrf); input.put("version",json.readTree(reactPayload(edit.body())).path("data").path("values").path("version").asText());
+        input.put("username",taken.username());input.put("email",user.email());
+        input.put("givenName","Dara");input.put("familyName","Sok");input.put("locale","en");
+        var duplicate=send(browser,"POST","/profile/edit",form(input),null,"application/x-www-form-urlencoded");
+        assertEquals(400,duplicate.statusCode());
+        assertEquals("validation.duplicate.username",json.readTree(reactPayload(duplicate.body())).path("data").path("errors").path("username").asText());
+        input.put("username",user.username());input.put("email",taken.email());
+        duplicate=send(browser,"POST","/profile/edit",form(input),null,"application/x-www-form-urlencoded");
+        assertEquals(400,duplicate.statusCode());
+        assertEquals("validation.duplicate.email",json.readTree(reactPayload(duplicate.body())).path("data").path("errors").path("email").asText());
+        var anonymous=client();String loginCsrf=csrf(send(anonymous,"GET","/login",null,null,null).body());
+        send(anonymous,"POST","/login",form(Map.of("_csrf",loginCsrf,"username",user.username(),"password","incorrect")),null,"application/x-www-form-urlencoded");
+        assertFalse(tree(workspace(browser,csrf,"GET","/activity?event=login&success=false",null)).path("content").isEmpty());
+        assertFalse(tree(workspace(browser,csrf,"GET","/activity?event=profile_updated&success=false",null)).path("content").isEmpty());
+    }
+
+    @Test
+    @org.junit.jupiter.api.condition.EnabledIfSystemProperty(named="iam.browser.checks",matches="true")
+    void workspaceBrowserManagementAndAccountFlows() throws Exception {
+        var admin=workspaceAdmin();var user=register();
+        var root=java.nio.file.Path.of(System.getProperty("iam.project.root"));
+        var process=new ProcessBuilder("node",root.resolve("scripts/workspace-check.mjs").toString()).directory(root.toFile()).redirectErrorStream(true);
+        process.environment().put("IAM_BROWSER_URL",origin());process.environment().put("IAM_BROWSER_USERNAME",admin.username());
+        process.environment().put("IAM_BROWSER_USER",user.username());process.environment().put("IAM_BROWSER_PASSWORD",PASSWORD);
+        process.environment().put("IAM_BROWSER_ADMIN_UUID", admin.uuid().toString());
+        var log=root.resolve("verification/workspace-browser.log");
+        var running=process.redirectOutput(log.toFile()).start();
+        if(!running.waitFor(120,java.util.concurrent.TimeUnit.SECONDS)){running.destroyForcibly();fail("Workspace browser timeout");}
+        assertEquals(0,running.exitValue(),java.nio.file.Files.readString(log));
     }
 
 }
