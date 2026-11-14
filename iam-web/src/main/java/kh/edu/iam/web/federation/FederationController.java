@@ -67,6 +67,16 @@ public final class FederationController {
         model.addAttribute("identities", identities.execute(owner.uuid()));
         model.addAttribute("linked", request.getParameterMap().containsKey("linked"));
         model.addAttribute("failed", request.getParameterMap().containsKey("error"));
+        var session = request.getSession(false);
+        if (session != null) {
+            var failure = session.getAttribute("iam_federation_link_error");
+            session.removeAttribute("iam_federation_link_error");
+            if (request.getParameterMap().containsKey("error") && failure instanceof String code
+                    && java.util.Set.of("provider_link_cancelled", "provider_link_conflict",
+                            "provider_link_session", "provider_link_failed").contains(code)) {
+                model.addAttribute("errorCode", code);
+            }
+        }
         model.addAttribute("unlinked", request.getParameterMap().containsKey("unlinked"));
         return "linked-accounts";
     }
@@ -85,6 +95,7 @@ public final class FederationController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         request.getSession().removeAttribute(PendingFederation.SESSION_ATTRIBUTE);
+        request.getSession().removeAttribute("iam_federation_link_error");
         var authorization =
                 OAuth2AuthorizationRequest.from(resolver.resolve(request, provider))
                         .attributes(attributes -> attributes.put("iam_link_owner", owner.uuid().toString()))

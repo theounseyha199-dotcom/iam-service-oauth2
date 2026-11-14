@@ -15,7 +15,7 @@ public class HomeController {
     private final BrowserUser current;
     private final GetUserAuthoritiesUseCase authorities;
 
-    @GetMapping("/")
+    @GetMapping({"/", "/workspace"})
     public String home(Model model) {
         var user = current.current();
         model.addAttribute("user", user);

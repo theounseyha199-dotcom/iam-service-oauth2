@@ -28,6 +28,11 @@ public class BrowserPageAdvice {
                 }
             }
         }
+        if (request.getRequestURI().equals(request.getContextPath()+"/") || request.getRequestURI().endsWith("/workspace")) {
+            for (String key : java.util.List.of("panel", "page", "search", "status", "actor", "target", "from", "to", "suspicious")) {
+                if(request.getParameter(key)!=null) languagePath.queryParam(key,request.getParameter(key));
+            }
+        }
         return new Page(
                 request.getContextPath(),
                 csrf == null ? "_csrf" : csrf.getParameterName(),

@@ -1,5 +1,7 @@
 package kh.edu.iam.web.view;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import kh.edu.iam.application.port.out.CurrentActorProvider;
 import kh.edu.iam.application.user.result.UserResult;
 import kh.edu.iam.application.user.usecase.GetUserUseCase;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public class BrowserUser {
     private final CurrentActorProvider actors;
     private final GetUserUseCase users;
+    private final EmailVerification verification;
 
     public boolean isSignedIn() {
         try {
@@ -34,7 +37,7 @@ public class BrowserUser {
             throw new AccessDeniedException("Internal browser user required");
         }
         var user = users.execute(id);
-        if (!user.enabled() || !user.accountNonLocked() || !user.accountNonExpired() || !user.credentialsNonExpired()) {
+        if (verification.isPending(user.uuid()) || !user.enabled() || !user.accountNonLocked() || !user.accountNonExpired() || !user.credentialsNonExpired()) {
             throw new AccessDeniedException("Account unavailable");
         }
         return user;

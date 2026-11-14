@@ -33,7 +33,7 @@ public class RegistrationPageController {
     }
 
     @PostMapping("/register")
-    public String register(@RequestParam Map<String, String> values, Model model, HttpServletResponse response) {
+    public String register(@RequestParam Map<String, String> values, Model model, HttpServletResponse response, jakarta.servlet.http.HttpServletRequest request) {
         var errors = new LinkedHashMap<String, String>();
         for (String key : List.of("username", "email", "givenName", "familyName", "password", "confirmPassword")) {
             if (values.getOrDefault(key, "").isBlank()) {
@@ -64,7 +64,7 @@ public class RegistrationPageController {
         String error = "validation";
         if (errors.isEmpty()) {
             try {
-                register.execute(
+                var user = register.execute(
                         new RegisterUserCommand(
                                 values.get("username"),
                                 values.get("email"),
@@ -73,7 +73,8 @@ public class RegistrationPageController {
                                 values.get("givenName"),
                                 values.get("familyName"),
                                 values.getOrDefault("locale", "en")));
-                return "redirect:/login?registered";
+                request.getSession().setAttribute("verificationEmail", user.email());
+                return "redirect:/verify-email";
             } catch (RuntimeException ex) {
                 error = Forms.code(ex);
             }

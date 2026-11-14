@@ -50,6 +50,11 @@ public final class Forms {
                 errors.put(key, "validation.required");
             }
         }
+        if (input.containsKey("username")) {
+            String username = input.get("username");
+            if (username == null || username.isBlank()) errors.put("username", "validation.required");
+            else if (username.length() > 50 || !username.equals(username.strip())) errors.put("username", "validation.value");
+        }
         try {
             kh.edu.iam.domain.rule.Checks.email(input.get("email"));
         } catch (DomainException ex) {

@@ -67,6 +67,7 @@ public class ProfilePageController {
             }
             var patch =
                     ProfilePatch.builder()
+                            .username(input.getOrDefault("username", user.username()))
                             .email(input.get("email"))
                             .givenName(input.get("givenName"))
                             .familyName(input.get("familyName"))
@@ -90,6 +91,12 @@ public class ProfilePageController {
             response.setStatus(code.equals("concurrent_update") ? 409 : 400);
             model.addAttribute("values", Forms.values(input));
             model.addAttribute("errorCode", code);
+            if (ex instanceof kh.edu.iam.application.exception.ApplicationException app) {
+                var fieldErrors = new LinkedHashMap<String,String>();
+                app.errors().keySet().stream().filter(key -> List.of("username", "email").contains(key))
+                        .forEach(key -> fieldErrors.put(key, "validation.duplicate." + key));
+                model.addAttribute("errors", fieldErrors);
+            }
             return "profile-edit";
         }
     }
@@ -138,6 +145,7 @@ public class ProfilePageController {
         var result = new LinkedHashMap<String, String>();
         var profile = user.profile();
         result.put("version", Long.toString(user.version()));
+        result.put("username", user.username());
         result.put("email", user.email());
         result.put("givenName", profile.givenName());
         result.put("familyName", profile.familyName());
