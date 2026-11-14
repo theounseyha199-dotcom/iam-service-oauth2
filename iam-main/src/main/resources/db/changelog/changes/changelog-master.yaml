@@ -24,3 +24,15 @@ databaseChangeLog:
   - include:
       file: 008-authorization-server.sql
       relativeToChangelogFile: true
+  - include:
+      file: 009-password-reset.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 010-email-verification.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 011-workspace.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 012-management-review.sql
+      relativeToChangelogFile: true

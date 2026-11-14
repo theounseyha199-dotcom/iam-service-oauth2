@@ -40,7 +40,7 @@ import java.util.UUID;
 
 @io.swagger.v3.oas.annotations.tags.Tag(name="Roles", description="Manage roles and their permissions.")
 @RestController
-@RequestMapping("/api/roles")
+@RequestMapping({"/api/roles", "/workspace/api/roles"})
 @RequiredArgsConstructor
 public class RolesController {
     private final CreateRoleUseCase createRoleUseCase;

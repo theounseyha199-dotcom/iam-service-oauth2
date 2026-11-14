@@ -1,0 +1,16 @@
+# Real email without a custom domain. Configure with scripts/configure-gmail.py.
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_APP_PASSWORD}
+    test-connection: true
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+
+app:
+  iam:
+    mail-from: ${GMAIL_USERNAME}

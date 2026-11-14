@@ -21,7 +21,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 
-@RestControllerAdvice(basePackages = "kh.edu.iam.restapi.controller")
+@RestControllerAdvice(basePackages = {"kh.edu.iam.restapi.controller", "kh.edu.iam.infrastructure.workspace"})
 public class ApiErrors extends ResponseEntityExceptionHandler {
     public record FieldError(String field, String message) {}
 

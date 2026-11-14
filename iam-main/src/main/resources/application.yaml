@@ -1,4 +1,25 @@
 spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 2s
+      timeout: 2s
+      repositories:
+        enabled: false
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+      mail.smtp.starttls.required: ${MAIL_SMTP_STARTTLS_REQUIRED:true}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   application:
     name: iam-service
   datasource:
@@ -15,12 +36,11 @@ spring:
 server:
   port: ${SERVER_PORT:9000}
 
-gg:
-  jte:
-    use-precompiled-templates: true
-
 app:
   iam:
+    # Offline lookup only; blank keeps public-IP locations unavailable.
+    geoip-database: ${IAM_GEOIP_DATABASE:}
+    mail-from: ${IAM_MAIL_FROM:no-reply@localhost}
     issuer: ${IAM_ISSUER:http://localhost:9000}
     signing-key-file: ${IAM_SIGNING_KEY_FILE:.local/iam-signing-key.json}
     clients:

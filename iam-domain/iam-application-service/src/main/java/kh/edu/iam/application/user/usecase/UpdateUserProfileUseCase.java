@@ -35,7 +35,11 @@ public final class UpdateUserProfileUseCase {
                     if (patch.email().supplied()
                             && !Objects.equals(user.getEmail(), patch.email().value())
                             && users.existsByEmail(Objects.requireNonNull(patch.email().value()))) {
-                        throw new DuplicateResourceException("Email already exists");
+                        throw new DuplicateResourceException("Email already exists", "email");
+                    }
+                    if (patch.username().supplied() && !Objects.equals(user.getUsername(), patch.username().value())
+                            && users.existsByUsername(Objects.requireNonNull(patch.username().value()))) {
+                        throw new DuplicateResourceException("Username already exists", "username");
                     }
                     patch.apply(user, actors.currentActor(), clock.instant());
                     return support.result(users.save(user));

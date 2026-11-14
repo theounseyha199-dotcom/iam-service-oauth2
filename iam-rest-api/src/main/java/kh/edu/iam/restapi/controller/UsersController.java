@@ -51,7 +51,7 @@ import java.util.UUID;
 
 @io.swagger.v3.oas.annotations.tags.Tag(name="Users", description="Manage user accounts and access.")
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping({"/api/users", "/workspace/api/users"})
 @RequiredArgsConstructor
 public class UsersController {
     private final CreateUserUseCase createUserUseCase;

@@ -1,5 +1,7 @@
 package kh.edu.iam.infrastructure.federation;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -36,10 +38,13 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
     public static final String PENDING = PendingFederation.SESSION_ATTRIBUTE;
 
     private final Function<AuthUserResult, UserDetails> principals;
+    private final EmailVerification verification;
     private final ProviderIdentityMapper mapper;
     private final FindOrProvisionFederatedUserUseCase provision;
     private final LinkIdentityUseCase link;
     private final GetUserUseCase users;
+    private final org.springframework.context.ApplicationEventPublisher events;
+    private final org.springframework.security.core.session.SessionRegistry sessions;
     private final SavedRequestAwareAuthenticationSuccessHandler success =
             new SavedRequestAwareAuthenticationSuccessHandler();
     private final HttpSessionSecurityContextRepository contexts = new HttpSessionSecurityContextRepository();
@@ -49,12 +54,18 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
             FindOrProvisionFederatedUserUseCase provision,
             LinkIdentityUseCase link,
             GetUserUseCase users,
-            @Qualifier("federatedUserDetailsFactory") Function<AuthUserResult, UserDetails> principals) {
+            @Qualifier("federatedUserDetailsFactory") Function<AuthUserResult, UserDetails> principals,
+            EmailVerification verification,
+            org.springframework.context.ApplicationEventPublisher events,
+            org.springframework.security.core.session.SessionRegistry sessions) {
         this.mapper = mapper;
         this.provision = provision;
         this.link = link;
         this.users = users;
         this.principals = principals;
+        this.verification = verification;
+        this.events = events;
+        this.sessions = sessions;
     }
 
     @Override
@@ -84,6 +95,7 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
                 // Restore internal owner before auditing the use case; never audit as the external subject.
                 save(request, response, original);
                 link.execute(owner, command);
+                events.publishEvent(new kh.edu.iam.infrastructure.workspace.AccountSecurityEvent(owner, "social_linked"));
                 response.sendRedirect(request.getContextPath() + "/profile/accounts?linked");
             } else {
                 // The temporary OAuth principal must never become an IAM browser session.
@@ -106,6 +118,7 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
             }
         } catch (RuntimeException ex) {
             logFailure(request, ex);
+            if (linking && original(request) != null) rememberLinkFailure(request, ex);
             save(request, response, linking ? original(request) : null);
             response.sendRedirect(
                     request.getContextPath()
@@ -117,7 +130,7 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
 
     public void authenticate(HttpServletRequest request, HttpServletResponse response, AuthUserResult result)
             throws IOException, ServletException {
-        if (!result.enabled()
+        if (verification.isPending(result.uuid()) || !result.enabled()
                 || !result.accountNonLocked()
                 || !result.accountNonExpired()
                 || !result.credentialsNonExpired()) {
@@ -125,7 +138,12 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
         }
         var principal = principals.apply(result);
         var internal = federatedAuthentication(principal);
+        // Associate the final IAM principal, rather than the temporary provider principal, with this session.
+        var session = request.getSession();
+        request.changeSessionId();
         save(request, response, internal);
+        sessions.registerNewSession(session.getId(), principal);
+        events.publishEvent(new kh.edu.iam.infrastructure.workspace.AccountSecurityEvent(result.uuid(), "login"));
         success.onAuthenticationSuccess(request, response, internal);
     }
 
@@ -148,9 +166,24 @@ public final class FederationLoginHandler implements AuthenticationSuccessHandle
             session.removeAttribute(PENDING);
         }
         Authentication original = original(request);
+        if (original != null) rememberLinkFailure(request, exception);
         save(request, response, original);
         response.sendRedirect(
                 request.getContextPath() + (original == null ? "/login?oauth2error" : "/profile/accounts?error"));
+    }
+
+    private void rememberLinkFailure(HttpServletRequest request, RuntimeException exception) {
+        String code = exception instanceof ApplicationException application ? application.code()
+                : exception instanceof org.springframework.security.oauth2.core.OAuth2AuthenticationException oauth
+                        ? oauth.getError().getErrorCode() : "";
+        // Persist application-owned keys only, never provider messages or callback parameters.
+        String display = switch (code == null ? "" : code) {
+            case "access_denied" -> "provider_link_cancelled";
+            case "conflict" -> "provider_link_conflict";
+            case "link_session_changed", "authorization_request_not_found", "invalid_state_parameter" -> "provider_link_session";
+            default -> "provider_link_failed";
+        };
+        request.getSession().setAttribute("iam_federation_link_error", display);
     }
 
     /** Log only bounded codes/types: exception messages can contain provider tokens or PII. */

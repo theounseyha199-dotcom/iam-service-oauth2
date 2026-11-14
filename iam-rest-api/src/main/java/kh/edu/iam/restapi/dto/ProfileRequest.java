@@ -16,7 +16,14 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class ProfileRequest implements Requests.Strict {
+    @jakarta.validation.constraints.Min(0)
+    private Long version;
+    @JsonSetter("version") public void setVersion(Long value) { version=value; }
     private final Set<String> supplied = new HashSet<>();
+
+    @Size(min = 1, max = 50)
+    private String username;
+    @JsonSetter("username") public void setUsername(String value) { supplied.add("username"); username=value; }
 
     @Email
     @Size(max = 255)
@@ -145,6 +152,7 @@ public final class ProfileRequest implements Requests.Strict {
 
     public UpdateUserProfileCommand command(UUID uuid) {
         var patch = ProfilePatch.builder();
+        if (supplied.contains("username")) patch.username(username);
         if (supplied.contains("email")) {
             patch.email(email);
         }
@@ -187,6 +195,6 @@ public final class ProfileRequest implements Requests.Strict {
         if (supplied.contains("address")) {
             patch.address(address == null ? null : address.value());
         }
-        return new UpdateUserProfileCommand(uuid, patch.build());
+        return new UpdateUserProfileCommand(uuid, patch.build(), version);
     }
 }

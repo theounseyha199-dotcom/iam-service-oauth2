@@ -1,5 +1,7 @@
 package co.istad.iam.config;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import kh.edu.iam.application.port.out.CurrentActorProvider;
 import kh.edu.iam.application.port.out.PasswordHasher;
 import kh.edu.iam.application.port.out.PermissionRepository;
@@ -130,8 +132,9 @@ public class UserUseCaseConfiguration {
 
     @Bean
     public LoadUserForAuthenticationUseCase loadUserForAuthenticationUseCase(
-            UserRepository users, UserApplicationSupport support, TransactionRunner transactions) {
-        return new LoadUserForAuthenticationUseCase(users, support, transactions);
+            UserRepository users, UserApplicationSupport support, TransactionRunner transactions,
+            EmailVerification verification) {
+        return new LoadUserForAuthenticationUseCase(users, support, transactions, verification);
     }
 
     @Bean
@@ -158,8 +161,8 @@ public class UserUseCaseConfiguration {
             PasswordHasher passwords,
             RoleRepository roles,
             UserAssignmentRepository assignments,
-            Clock clock) {
-        return new RegisterUserUseCase(users, support, transactions, passwords, roles, assignments, clock);
+            Clock clock, EmailVerification verification) {
+        return new RegisterUserUseCase(users, support, transactions, passwords, roles, assignments, clock, verification);
     }
 
     @Bean

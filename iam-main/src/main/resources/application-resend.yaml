@@ -1,0 +1,16 @@
+# Real email delivery through Resend. The API key remains server-side.
+# Activate with SPRING_PROFILES_ACTIVE=resend.
+spring:
+  mail:
+    host: smtp.resend.com
+    port: 587
+    username: resend
+    password: ${RESEND_API_KEY}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+
+app:
+  iam:
+    mail-from: ${IAM_MAIL_FROM:onboarding@resend.dev}

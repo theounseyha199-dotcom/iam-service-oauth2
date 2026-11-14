@@ -1,5 +1,7 @@
 package kh.edu.iam.infrastructure.config;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
@@ -37,7 +39,8 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
+            EmailVerification verification) throws Exception {
 
         http.oauth2AuthorizationServer(
                         (authorizationServer) -> {
@@ -76,6 +79,20 @@ public class SecurityConfig {
                                                 new LoginUrlAuthenticationEntryPoint("/login"),
                                                 new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
 
+        http.addFilterAfter(new org.springframework.web.filter.OncePerRequestFilter() {
+            @Override
+            protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+                    jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain chain)
+                    throws java.io.IOException, jakarta.servlet.ServletException {
+                var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null && auth.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal principal
+                        && verification.isPending(principal.uuid())) {
+                    response.sendError(403);
+                    return;
+                }
+                chain.doFilter(request, response);
+            }
+        }, org.springframework.security.web.context.SecurityContextHolderFilter.class);
         return http.build();
     }
 
@@ -86,14 +103,71 @@ public class SecurityConfig {
             OAuth2AuthorizationRequestResolver resolver,
             AuthorizationRequestRepository<OAuth2AuthorizationRequest> requests,
             @Qualifier("federationLoginHandler") AuthenticationSuccessHandler federationSuccess,
-            @Qualifier("federationLoginHandler") AuthenticationFailureHandler federationFailure)
+            @Qualifier("federationLoginHandler") AuthenticationFailureHandler federationFailure,
+            kh.edu.iam.application.user.usecase.GetUserUseCase workspaceUsers,
+            kh.edu.iam.application.user.usecase.GetUserAuthoritiesUseCase workspaceAuthorities)
             throws Exception {
+        http.sessionManagement(session -> session.maximumSessions(-1).sessionRegistry(recoverySessionRegistry())
+                .expiredSessionStrategy(event -> {
+                    var request = event.getRequest();
+                    var response = event.getResponse();
+                    if (request.getRequestURI().startsWith(request.getContextPath() + "/workspace/api/")) {
+                        response.setStatus(401);
+                        response.setContentType("application/problem+json");
+                        response.getWriter().write("{\"status\":401}");
+                    } else response.sendRedirect(request.getContextPath() + "/login?logout");
+                }));
+        http.addFilterAfter(new org.springframework.web.filter.OncePerRequestFilter() {
+            @Override protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+                    jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain chain)
+                    throws java.io.IOException, jakarta.servlet.ServletException {
+                String path=request.getRequestURI().substring(request.getContextPath().length());
+                if(path.startsWith("/workspace/api/")) {
+                    var currentSession = request.getSession(false);
+                    var sessionInformation = currentSession == null ? null
+                            : recoverySessionRegistry().getSessionInformation(currentSession.getId());
+                    if (sessionInformation != null && sessionInformation.isExpired()) {
+                        currentSession.invalidate();
+                        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                        response.setStatus(401);
+                        response.setContentType("application/problem+json");
+                        response.getWriter().write("{\"status\":401}");
+                        return;
+                    }
+                    var authentication=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                    if(authentication==null || !(authentication.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal principal)) {
+                        response.setStatus(401); response.setContentType("application/problem+json");
+                        response.getWriter().write("{\"status\":401}"); return;
+                    }
+                    try {
+                        var user=workspaceUsers.execute(principal.uuid());
+                        if(!user.enabled() || !user.accountNonLocked() || !user.accountNonExpired() || !user.credentialsNonExpired()) throw new org.springframework.security.access.AccessDeniedException("Unavailable");
+                        var names=workspaceAuthorities.execute(principal.uuid()).effectivePermissions();
+                        var refreshed=org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(principal,null,
+                                names.stream().map(org.springframework.security.core.authority.SimpleGrantedAuthority::new).toList());
+                        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(refreshed);
+                    } catch(RuntimeException ex) {
+                        response.setStatus(403);response.setContentType("application/problem+json");response.getWriter().write("{\"status\":403}");return;
+                    }
+                }
+                chain.doFilter(request,response);
+            }
+        }, org.springframework.security.web.context.SecurityContextHolderFilter.class);
         http.authorizeHttpRequests(
                         (authorize) ->
                                 authorize
                                         .requestMatchers(
                                                 "/login",
+                                                "/test",
+                                                "/react/**",
+                                                "/icons.svg",
+                                                "/favicon.svg",
                                                 "/register",
+                                                "/forgot-password",
+                                                "/verify-email",
+                                                "/resend-verification",
+                                                "/registration-pending",
+                                                "/reset-password",
                                                 "/error",
                                                 "/federation/complete",
                                                 "/federation/cancel",
@@ -125,6 +199,16 @@ public class SecurityConfig {
                                         .permitAll());
 
         return http.build();
+    }
+
+    @Bean
+    public org.springframework.security.core.session.SessionRegistry recoverySessionRegistry() {
+        return new org.springframework.security.core.session.SessionRegistryImpl();
+    }
+
+    @Bean
+    public org.springframework.security.web.session.HttpSessionEventPublisher sessionEvents() {
+        return new org.springframework.security.web.session.HttpSessionEventPublisher();
     }
 
     @Bean

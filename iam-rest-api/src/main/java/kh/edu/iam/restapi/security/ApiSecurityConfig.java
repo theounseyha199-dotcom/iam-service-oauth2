@@ -1,5 +1,7 @@
 package kh.edu.iam.restapi.security;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +34,9 @@ public class ApiSecurityConfig {
     @Bean
     @Order(2)
     SecurityFilterChain apiSecurityFilterChain(
-            HttpSecurity http, JwtDecoder jwtDecoder, @Value("${app.iam.issuer}") String issuer) throws Exception {
+            HttpSecurity http, JwtDecoder jwtDecoder, @Value("${app.iam.issuer}") String issuer,
+            EmailVerification verification,
+            kh.edu.iam.application.user.usecase.GetUserUseCase users) throws Exception {
         var validator = JwtValidators.createDefaultWithIssuer(issuer);
         JwtDecoder ownIssuerDecoder =
                 token -> {
@@ -47,6 +51,26 @@ public class ApiSecurityConfig {
                     // OIDC ID tokens must not be usable as API access tokens.
                     if (jwt.getClaims().containsKey("nonce") || !jwt.getClaims().containsKey("scope")) {
                         throw new BadJwtException("An access token is required");
+                    }
+                    java.util.UUID userId = null;
+                    try {
+                        userId = java.util.UUID.fromString(jwt.getSubject());
+                    } catch (IllegalArgumentException ex) {
+                        // Client-credentials subjects are client IDs, rather than user UUIDs.
+                    }
+                    if (userId != null) {
+                        if (verification.isPending(userId)) {
+                            throw new BadJwtException("Email verification is required");
+                        }
+                        try {
+                            var user = users.execute(userId);
+                            if (!user.enabled() || !user.accountNonLocked() || !user.accountNonExpired()
+                                    || !user.credentialsNonExpired()) {
+                                throw new BadJwtException("Account unavailable");
+                            }
+                        } catch (kh.edu.iam.application.exception.ApplicationException ex) {
+                            throw new BadJwtException("Account unavailable", ex);
+                        }
                     }
                     return jwt;
                 };

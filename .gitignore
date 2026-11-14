@@ -46,3 +46,8 @@ out/
 # Local IntelliJ run configuration containing environment secrets
 /.run/IAM Local.private.run.xml
 /postman/*.private.postman_environment.json
+
+# Generated local caches and runtime test logs
+__pycache__/
+*.py[cod]
+/verification/*.log

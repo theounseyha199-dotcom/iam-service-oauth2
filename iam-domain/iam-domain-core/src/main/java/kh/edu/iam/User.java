@@ -12,7 +12,7 @@ public final class User {
 
     private final Long id;
     private final UUID uuid;
-    private final String username;
+    private String username;
 
     private String email;
     private boolean emailVerified;
@@ -100,6 +100,14 @@ public final class User {
 
         this.profile = validated;
         this.audit = updatedAudit;
+    }
+
+    public void changeUsername(String username, String actor, Instant now) {
+        requireNotDeleted();
+        String validated = validateUsername(username);
+        if (validated.contains("@")) throw new IllegalArgumentException("Username cannot contain @");
+        this.username = validated;
+        this.audit = audit.updated(actor, now);
     }
 
     public void changeEmail(String email, String actor, Instant now) {

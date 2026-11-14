@@ -2,12 +2,16 @@ plugins {
     id 'spring-common-conventions'
 }
 dependencies {
+    implementation 'com.maxmind.geoip2:geoip2:5.2.0'
+    implementation libs.springdoc.openapi.starter.webmvc.ui
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation project(':iam-domain:iam-application-service')
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-client'
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-authorization-server'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }
 

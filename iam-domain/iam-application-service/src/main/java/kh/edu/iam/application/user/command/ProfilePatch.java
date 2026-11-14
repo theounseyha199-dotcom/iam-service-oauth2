@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 public record ProfilePatch(
+        FieldUpdate<String> username,
         FieldUpdate<String> email,
         FieldUpdate<String> givenName,
         FieldUpdate<String> familyName,
@@ -26,6 +27,7 @@ public record ProfilePatch(
         FieldUpdate<Address> address) {
 
     public ProfilePatch {
+        username = FieldUpdate.normalize(username);
         email = FieldUpdate.normalize(email);
         givenName = FieldUpdate.normalize(givenName);
         familyName = FieldUpdate.normalize(familyName);
@@ -72,6 +74,7 @@ public record ProfilePatch(
 
         user.updateProfile(changed, actor, now);
 
+        if (username.supplied()) user.changeUsername(username.value(), actor, now);
         if (email.supplied()) {
             user.changeEmail(email.value(), actor, now);
         }
@@ -80,6 +83,7 @@ public record ProfilePatch(
 
     public static final class Builder {
 
+        private FieldUpdate<String> username = FieldUpdate.unchanged();
         private FieldUpdate<String> email = FieldUpdate.unchanged();
         private FieldUpdate<String> givenName = FieldUpdate.unchanged();
         private FieldUpdate<String> familyName = FieldUpdate.unchanged();
@@ -94,6 +98,8 @@ public record ProfilePatch(
         private FieldUpdate<String> locale = FieldUpdate.unchanged();
         private FieldUpdate<String> phoneNumber = FieldUpdate.unchanged();
         private FieldUpdate<Address> address = FieldUpdate.unchanged();
+
+        public Builder username(String value) { username = FieldUpdate.set(value); return this; }
 
         public Builder email(String value) {
             email = FieldUpdate.set(value);
@@ -167,6 +173,7 @@ public record ProfilePatch(
 
         public ProfilePatch build() {
             return new ProfilePatch(
+                    username,
                     email,
                     givenName,
                     familyName,

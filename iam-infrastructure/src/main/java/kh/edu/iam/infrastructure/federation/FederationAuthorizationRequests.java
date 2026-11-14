@@ -42,9 +42,15 @@ public final class FederationAuthorizationRequests
     public OAuth2AuthorizationRequest removeAuthorizationRequest(
             HttpServletRequest request, HttpServletResponse response) {
         var value = delegate.removeAuthorizationRequest(request, response);
+        Authentication current = SecurityContextHolder.getContext().getAuthentication();
+        // An invalid callback must not log out an existing internal account. This only
+        // preserves its session on failure; no authorization request means no link intent.
+        if (value == null && current != null && current.isAuthenticated()
+                && current.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal) {
+            request.setAttribute(ORIGINAL, current);
+        }
         if (value != null) {
             request.setAttribute(REQUEST, value);
-            Authentication current = SecurityContextHolder.getContext().getAuthentication();
             String owner = value.getAttribute(OWNER);
             if (owner != null && current != null && current.isAuthenticated() && owner.equals(actors.currentActor())) {
                 request.setAttribute(ORIGINAL, current);

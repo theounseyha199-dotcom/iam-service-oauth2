@@ -1,5 +1,7 @@
 package kh.edu.iam.application.user.usecase;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import kh.edu.iam.Role;
 import kh.edu.iam.User;
 import kh.edu.iam.UserProfile;
@@ -28,11 +30,12 @@ public final class RegisterUserUseCase {
     private final RoleRepository roles;
     private final UserAssignmentRepository assignments;
     private final Clock clock;
+    private final EmailVerification verification;
 
     public UserResult execute(RegisterUserCommand command) {
         Objects.requireNonNull(command);
         PasswordPolicy.validate(command.password(), command.confirmPassword());
-        return transactions.required(
+        var result = transactions.required(
                 () -> {
                     var now = clock.instant();
                     var user =
@@ -45,6 +48,7 @@ public final class RegisterUserUseCase {
                                     now);
                     support.checkUnique(user);
                     var saved = users.save(user);
+                    verification.enroll(saved.getUuid());
                     var role =
                             roles.findByName("USER")
                                     .filter(Role::isAssignable)
@@ -59,5 +63,7 @@ public final class RegisterUserUseCase {
                                     "Default registration role"));
                     return support.result(saved);
                 });
+        verification.request(result.email());
+        return result;
     }
 }

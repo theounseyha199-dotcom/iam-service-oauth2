@@ -1,5 +1,7 @@
 package kh.edu.iam.infrastructure.config;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+
 import kh.edu.iam.application.exception.ApplicationException;
 import kh.edu.iam.application.user.result.UserResult;
 import kh.edu.iam.application.user.usecase.GetUserAuthoritiesUseCase;
@@ -25,7 +27,8 @@ import java.util.Objects;
 public class TokenConfig {
     @Bean
     public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer(
-            GetUserUseCase users, GetUserAuthoritiesUseCase authorities, TokenAudienceProperties tokenProperties) {
+            GetUserUseCase users, GetUserAuthoritiesUseCase authorities, TokenAudienceProperties tokenProperties,
+            EmailVerification verification) {
         return context -> {
             boolean accessToken = OAuth2TokenType.ACCESS_TOKEN.equals(context.getTokenType());
             boolean idToken = OidcParameterNames.ID_TOKEN.equals(context.getTokenType().getValue());
@@ -44,7 +47,7 @@ public class TokenConfig {
                     }
                     throw unavailable();
                 }
-                if (!user.enabled()
+                if (verification.isPending(user.uuid()) || !user.enabled()
                         || !user.accountNonExpired()
                         || !user.accountNonLocked()
                         || !user.credentialsNonExpired()) {

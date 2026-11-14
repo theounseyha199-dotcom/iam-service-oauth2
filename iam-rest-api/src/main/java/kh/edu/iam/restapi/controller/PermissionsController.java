@@ -34,7 +34,7 @@ import java.util.UUID;
 
 @io.swagger.v3.oas.annotations.tags.Tag(name="Permissions", description="Manage available permissions.")
 @RestController
-@RequestMapping("/api/permissions")
+@RequestMapping({"/api/permissions", "/workspace/api/permissions"})
 @RequiredArgsConstructor
 public class PermissionsController {
     private final CreatePermissionUseCase createPermissionUseCase;

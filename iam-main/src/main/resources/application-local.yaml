@@ -1,0 +1,14 @@
+# Local development only: capture emails at http://localhost:8025.
+# Activate with SPRING_PROFILES_ACTIVE=local or --spring.profiles.active=local.
+spring:
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
+      mail.smtp.starttls.required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
+
+app:
+  iam:
+    mail-from: ${IAM_MAIL_FROM:no-reply@iam.local}
