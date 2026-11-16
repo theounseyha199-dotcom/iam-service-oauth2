@@ -1,0 +1,43 @@
+# Adopt the original db_oauth2 core schema without replaying CREATE TABLE migrations.
+databaseChangeLog:
+  - changeSet:
+      id: legacy-dashboard-compatibility
+      author: iam
+      preConditions:
+        - onFail: HALT
+        - tableExists:
+            tableName: users
+        - tableExists:
+            tableName: identities
+        - tableExists:
+            tableName: user_roles
+        - tableExists:
+            tableName: user_permissions
+        - tableExists:
+            tableName: role_permissions
+        - tableExists:
+            tableName: oauth2_registered_client
+        - sqlCheck:
+            expectedResult: 2
+            sql: SELECT count(*) FROM roles WHERE name IN ('ADMIN', 'USER') AND is_active AND NOT is_deleted
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS revocation_reason VARCHAR(255);
+              ALTER TABLE user_roles ADD COLUMN IF NOT EXISTS revocation_reason VARCHAR(255);
+              ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS revocation_reason VARCHAR(255);
+  - include:
+      file: 009-password-reset.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 010-email-verification.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 011-workspace.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 012-management-review.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 013-stable-oauth-subjects.sql
+      relativeToChangelogFile: true

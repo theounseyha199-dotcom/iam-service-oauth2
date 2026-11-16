@@ -330,6 +330,23 @@ class FullAssignmentIntegrationTest extends IamIntegrationTestSupport {
         assertEquals("no-store", response.headers().firstValue("Cache-Control").orElseThrow());
     }
 
+    @Test
+    void missingSessionUserRedirectsPagesAndReturnsUnauthorizedForWorkspaceApi() throws Exception {
+        var user = register();
+        var browser = login(user);
+        var apiBrowser = login(user);
+        assertEquals(200, send(browser, "GET", "/", null, null, null).statusCode());
+        jdbc.update(
+            "UPDATE users SET is_deleted=TRUE, deleted_at=CURRENT_TIMESTAMP, deleted_by='test-fixture' WHERE uuid=?",
+            user.uuid());
+        var response = send(browser, "GET", "/", null, null, null);
+        assertEquals(302, response.statusCode());
+        assertTrue(response.headers().firstValue("Location").orElseThrow().endsWith("/login?logout"));
+        assertEquals(200, send(browser, "GET", "/login", null, null, null).statusCode());
+        assertEquals(401, send(apiBrowser, "GET", "/workspace/api/overview", null, null, null).statusCode());
+        assertEquals(200, send(apiBrowser, "GET", "/login", null, null, null).statusCode());
+    }
+
     private HttpClient login(UserResult user) throws Exception {
         var browser = client();
         var page = send(browser, "GET", "/login", null, null, null);

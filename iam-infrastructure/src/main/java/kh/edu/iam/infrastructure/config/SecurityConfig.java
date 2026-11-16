@@ -1,10 +1,7 @@
 package kh.edu.iam.infrastructure.config;
 
-import kh.edu.iam.application.port.out.EmailVerification;
-
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +30,9 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
+import kh.edu.iam.application.port.out.EmailVerification;
+import kh.edu.iam.application.exception.ResourceNotFoundException;
+
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -40,53 +40,55 @@ public class SecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http,
-            EmailVerification verification) throws Exception {
+                                                                      EmailVerification verification) throws Exception {
 
         http.oauth2AuthorizationServer(
-                        (authorizationServer) -> {
-                            http.securityMatcher(authorizationServer.getEndpointsMatcher());
+                (authorizationServer) -> {
+                    http.securityMatcher(authorizationServer.getEndpointsMatcher());
 
-                            // Enable OpenID Connect 1.0
-                            authorizationServer.authorizationEndpoint(
-                                    endpoint -> endpoint.consentPage("/oauth2/consent"));
-                            authorizationServer.oidc(
-                                    oidc ->
-                                            oidc.logoutEndpoint(logout -> logout.errorResponseHandler((request, response, exception) -> {
-                                                        var error = ((org.springframework.security.oauth2.core.OAuth2AuthenticationException) exception).getError();
-                                                        String description = error.getDescription();
-                                                        String parameter = description != null && description.matches("OpenID Connect 1[.]0 Logout Request Parameter: [a-z_]+")
-                                                                ? description.substring(description.lastIndexOf(' ') + 1) : "unknown";
-                                                        org.slf4j.LoggerFactory.getLogger(SecurityConfig.class).warn(
-                                                                "OIDC logout rejected: code={}, parameter={}", error.getErrorCode(), parameter);
-                                                        response.sendError(400);
-                                                    }))
-                                                    .clientRegistrationEndpoint(
-                                                    registration ->
-                                                            registration.authenticationProviders(
-                                                                    ClientRegistrationPolicy::configure)));
-                        })
-                .authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
-                .exceptionHandling(
-                        (exceptions) ->
-                                exceptions
-                                        .defaultAuthenticationEntryPointFor(
-                                                new BearerTokenAuthenticationEntryPoint(),
-                                                new OrRequestMatcher(
-                                                        PathPatternRequestMatcher.withDefaults()
-                                                                .matcher("/connect/register"),
-                                                        PathPatternRequestMatcher.withDefaults().matcher("/userinfo")))
-                                        .defaultAuthenticationEntryPointFor(
-                                                new LoginUrlAuthenticationEntryPoint("/login"),
-                                                new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
+                    // Enable OpenID Connect 1.0
+                    authorizationServer.authorizationEndpoint(
+                        endpoint -> endpoint.consentPage("/oauth2/consent"));
+                    authorizationServer.oidc(
+                        oidc ->
+                            oidc.logoutEndpoint(logout -> logout.errorResponseHandler((request, response, exception) -> {
+                                    var error = ((org.springframework.security.oauth2.core.OAuth2AuthenticationException) exception).getError();
+                                    String description = error.getDescription();
+                                    String parameter = description != null && description.matches(
+                                        "OpenID Connect 1[.]0 Logout Request Parameter: [a-z_]+")
+                                        ? description.substring(description.lastIndexOf(' ') + 1) : "unknown";
+                                    org.slf4j.LoggerFactory.getLogger(SecurityConfig.class).warn(
+                                        "OIDC logout rejected: code={}, parameter={}", error.getErrorCode(), parameter);
+                                    response.sendError(400);
+                                }))
+                                .clientRegistrationEndpoint(
+                                    registration ->
+                                        registration.authenticationProviders(
+                                            ClientRegistrationPolicy::configure)));
+                })
+            .authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
+            .exceptionHandling(
+                (exceptions) ->
+                    exceptions
+                        .defaultAuthenticationEntryPointFor(
+                            new BearerTokenAuthenticationEntryPoint(),
+                            new OrRequestMatcher(
+                                PathPatternRequestMatcher.withDefaults()
+                                    .matcher("/connect/register"),
+                                PathPatternRequestMatcher.withDefaults().matcher("/userinfo")))
+                        .defaultAuthenticationEntryPointFor(
+                            new LoginUrlAuthenticationEntryPoint("/login"),
+                            new MediaTypeRequestMatcher(MediaType.TEXT_HTML)));
 
         http.addFilterAfter(new org.springframework.web.filter.OncePerRequestFilter() {
             @Override
             protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
-                    jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain chain)
-                    throws java.io.IOException, jakarta.servlet.ServletException {
+                                            jakarta.servlet.http.HttpServletResponse response,
+                                            jakarta.servlet.FilterChain chain)
+                throws java.io.IOException, jakarta.servlet.ServletException {
                 var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
                 if (auth != null && auth.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal principal
-                        && verification.isPending(principal.uuid())) {
+                    && verification.isPending(principal.uuid())) {
                     response.sendError(403);
                     return;
                 }
@@ -99,33 +101,60 @@ public class SecurityConfig {
     @Bean
     @Order(3)
     public SecurityFilterChain defaultSecurityFilterChain(
-            HttpSecurity http,
-            OAuth2AuthorizationRequestResolver resolver,
-            AuthorizationRequestRepository<OAuth2AuthorizationRequest> requests,
-            @Qualifier("federationLoginHandler") AuthenticationSuccessHandler federationSuccess,
-            @Qualifier("federationLoginHandler") AuthenticationFailureHandler federationFailure,
-            kh.edu.iam.application.user.usecase.GetUserUseCase workspaceUsers,
-            kh.edu.iam.application.user.usecase.GetUserAuthoritiesUseCase workspaceAuthorities)
-            throws Exception {
+        HttpSecurity http,
+        OAuth2AuthorizationRequestResolver resolver,
+        AuthorizationRequestRepository<OAuth2AuthorizationRequest> requests,
+        @Qualifier("federationLoginHandler") AuthenticationSuccessHandler federationSuccess,
+        @Qualifier("federationLoginHandler") AuthenticationFailureHandler federationFailure,
+        kh.edu.iam.application.user.usecase.GetUserUseCase workspaceUsers,
+        kh.edu.iam.application.user.usecase.GetUserAuthoritiesUseCase workspaceAuthorities)
+        throws Exception {
         http.sessionManagement(session -> session.maximumSessions(-1).sessionRegistry(recoverySessionRegistry())
-                .expiredSessionStrategy(event -> {
-                    var request = event.getRequest();
-                    var response = event.getResponse();
-                    if (request.getRequestURI().startsWith(request.getContextPath() + "/workspace/api/")) {
-                        response.setStatus(401);
-                        response.setContentType("application/problem+json");
-                        response.getWriter().write("{\"status\":401}");
-                    } else response.sendRedirect(request.getContextPath() + "/login?logout");
-                }));
+            .expiredSessionStrategy(event -> {
+                var request = event.getRequest();
+                var response = event.getResponse();
+                if (request.getRequestURI().startsWith(request.getContextPath() + "/workspace/api/")) {
+                    response.setStatus(401);
+                    response.setContentType("application/problem+json");
+                    response.getWriter().write("{\"status\":401}");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/login?logout");
+                }
+            }));
         http.addFilterAfter(new org.springframework.web.filter.OncePerRequestFilter() {
-            @Override protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
-                    jakarta.servlet.http.HttpServletResponse response, jakarta.servlet.FilterChain chain)
-                    throws java.io.IOException, jakarta.servlet.ServletException {
-                String path=request.getRequestURI().substring(request.getContextPath().length());
-                if(path.startsWith("/workspace/api/")) {
+            @Override
+            protected void doFilterInternal(jakarta.servlet.http.HttpServletRequest request,
+                                            jakarta.servlet.http.HttpServletResponse response,
+                                            jakarta.servlet.FilterChain chain)
+                throws java.io.IOException, jakarta.servlet.ServletException {
+                String path = request.getRequestURI().substring(request.getContextPath().length());
+                var currentAuthentication = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication();
+                if (currentAuthentication != null
+                    && currentAuthentication.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal user) {
+                    try {
+                        workspaceUsers.execute(user.uuid());
+                    } catch (ResourceNotFoundException ex) {
+                        var session = request.getSession(false);
+                        if (session != null) {
+                            recoverySessionRegistry().removeSessionInformation(session.getId());
+                            session.invalidate();
+                        }
+                        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                        if (path.startsWith("/workspace/api/")) {
+                            response.setStatus(401);
+                            response.setContentType("application/problem+json");
+                            response.getWriter().write("{\"status\":401}");
+                        } else {
+                            response.sendRedirect(request.getContextPath() + "/login?logout");
+                        }
+                        return;
+                    }
+                }
+                if (path.startsWith("/workspace/api/")) {
                     var currentSession = request.getSession(false);
                     var sessionInformation = currentSession == null ? null
-                            : recoverySessionRegistry().getSessionInformation(currentSession.getId());
+                        : recoverySessionRegistry().getSessionInformation(currentSession.getId());
                     if (sessionInformation != null && sessionInformation.isExpired()) {
                         currentSession.invalidate();
                         org.springframework.security.core.context.SecurityContextHolder.clearContext();
@@ -134,69 +163,79 @@ public class SecurityConfig {
                         response.getWriter().write("{\"status\":401}");
                         return;
                     }
-                    var authentication=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
-                    if(authentication==null || !(authentication.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal principal)) {
-                        response.setStatus(401); response.setContentType("application/problem+json");
-                        response.getWriter().write("{\"status\":401}"); return;
+                    var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                    if (authentication == null || !(authentication.getPrincipal() instanceof kh.edu.iam.infrastructure.security.IamUserPrincipal principal)) {
+                        response.setStatus(401);
+                        response.setContentType("application/problem+json");
+                        response.getWriter().write("{\"status\":401}");
+                        return;
                     }
                     try {
-                        var user=workspaceUsers.execute(principal.uuid());
-                        if(!user.enabled() || !user.accountNonLocked() || !user.accountNonExpired() || !user.credentialsNonExpired()) throw new org.springframework.security.access.AccessDeniedException("Unavailable");
-                        var names=workspaceAuthorities.execute(principal.uuid()).effectivePermissions();
-                        var refreshed=org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(principal,null,
-                                names.stream().map(org.springframework.security.core.authority.SimpleGrantedAuthority::new).toList());
-                        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(refreshed);
-                    } catch(RuntimeException ex) {
-                        response.setStatus(403);response.setContentType("application/problem+json");response.getWriter().write("{\"status\":403}");return;
+                        var user = workspaceUsers.execute(principal.uuid());
+                        if (!user.enabled() || !user.accountNonLocked() || !user.accountNonExpired() || !user.credentialsNonExpired()) {
+                            throw new org.springframework.security.access.AccessDeniedException("Unavailable");
+                        }
+                        var names = workspaceAuthorities.execute(principal.uuid()).effectivePermissions();
+                        var refreshed = org.springframework.security.authentication.UsernamePasswordAuthenticationToken.authenticated(
+                            principal, null,
+                            names.stream().map(
+                                org.springframework.security.core.authority.SimpleGrantedAuthority::new).toList());
+                        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                            refreshed);
+                    } catch (RuntimeException ex) {
+                        response.setStatus(403);
+                        response.setContentType("application/problem+json");
+                        response.getWriter().write("{\"status\":403}");
+                        return;
                     }
                 }
-                chain.doFilter(request,response);
+                chain.doFilter(request, response);
             }
         }, org.springframework.security.web.context.SecurityContextHolderFilter.class);
         http.authorizeHttpRequests(
-                        (authorize) ->
-                                authorize
-                                        .requestMatchers(
-                                                "/login",
-                                                "/test",
-                                                "/react/**",
-                                                "/icons.svg",
-                                                "/favicon.svg",
-                                                "/register",
-                                                "/forgot-password",
-                                                "/verify-email",
-                                                "/resend-verification",
-                                                "/registration-pending",
-                                                "/reset-password",
-                                                "/error",
-                                                "/federation/complete",
-                                                "/federation/cancel",
-                                                "/v3/api-docs/**",
-                                                "/swagger-ui/**",
-                                                "/swagger-ui.html",
-                                                "/scalar",
-                                                "/scalar/**",
-                                                "/css/**",
-                                                "/images/**",
-                                                "/js/**")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
-                // Form login handles the redirect to the login page from the
-                // authorization server filter chain
-                .exceptionHandling(
-                        errors -> errors.accessDeniedHandler((request, response, exception) -> response.sendError(403)))
-                .formLogin(form -> form.loginPage("/login").permitAll())
-                .oauth2Login(
-                        oauth2 ->
-                                oauth2.loginPage("/login")
-                                        .authorizationEndpoint(
-                                                endpoint ->
-                                                        endpoint.authorizationRequestResolver(resolver)
-                                                                .authorizationRequestRepository(requests))
-                                        .successHandler(federationSuccess)
-                                        .failureHandler(federationFailure)
-                                        .permitAll());
+                (authorize) ->
+                    authorize
+                        .requestMatchers(
+                            "/login",
+                            "/test",
+                            "/react/**",
+                            "/icons.svg",
+                            "/favicon.svg",
+                            "/register",
+                            "/forgot-password",
+                            "/verify-email",
+                            "/resend-verification",
+                            "/registration-pending",
+                            "/reset-password",
+                            "/error",
+                            "/federation/complete",
+                            "/federation/cancel",
+                            "/v3/api-docs/**",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/scalar",
+                            "/scalar/**",
+                            "/css/**",
+                            "/images/**",
+                            "/js/**")
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
+            // Form login handles the redirect to the login page from the
+            // authorization server filter chain
+            .exceptionHandling(
+                errors -> errors.accessDeniedHandler((request, response, exception) -> response.sendError(403)))
+            .formLogin(form -> form.loginPage("/login").permitAll())
+            .oauth2Login(
+                oauth2 ->
+                    oauth2.loginPage("/login")
+                        .authorizationEndpoint(
+                            endpoint ->
+                                endpoint.authorizationRequestResolver(resolver)
+                                    .authorizationRequestRepository(requests))
+                        .successHandler(federationSuccess)
+                        .failureHandler(federationFailure)
+                        .permitAll());
 
         return http.build();
     }
@@ -218,13 +257,13 @@ public class SecurityConfig {
 
     @Bean
     public JdbcOAuth2AuthorizationService authorizationService(
-            JdbcTemplate jdbcTemplate, RegisteredClientRepository clients) {
+        JdbcTemplate jdbcTemplate, RegisteredClientRepository clients) {
         return JdbcAuthorizationPersistence.create(jdbcTemplate, clients);
     }
 
     @Bean
     public JdbcOAuth2AuthorizationConsentService authorizationConsentService(
-            JdbcTemplate jdbcTemplate, RegisteredClientRepository clients) {
+        JdbcTemplate jdbcTemplate, RegisteredClientRepository clients) {
         return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, clients);
     }
 

@@ -27,7 +27,7 @@ spring:
     username: ${DB_USERNAME:iteuser}
     password: ${DB_PASSWORD}
   liquibase:
-    change-log: classpath:db/changelog/changes/changelog-master.yaml
+    change-log: ${IAM_CHANGELOG:classpath:db/changelog/changes/changelog-master.yaml}
   jpa:
     hibernate:
       ddl-auto: validate
