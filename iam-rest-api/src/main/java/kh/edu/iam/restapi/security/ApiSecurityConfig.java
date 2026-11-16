@@ -1,9 +1,11 @@
 package kh.edu.iam.restapi.security;
 
-import kh.edu.iam.application.port.out.EmailVerification;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import jakarta.servlet.http.HttpServletResponse;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,10 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import kh.edu.iam.application.port.out.EmailVerification;
 
 /**
  * Stateless bearer authentication is scoped to /api; browser sessions retain CSRF protection.
@@ -35,6 +34,7 @@ public class ApiSecurityConfig {
     @Order(2)
     SecurityFilterChain apiSecurityFilterChain(
             HttpSecurity http, JwtDecoder jwtDecoder, @Value("${app.iam.issuer}") String issuer,
+            @Value("${app.iam.api-audience:iam-api}") String audience,
             EmailVerification verification,
             kh.edu.iam.application.user.usecase.GetUserUseCase users) throws Exception {
         var validator = JwtValidators.createDefaultWithIssuer(issuer);
@@ -47,6 +47,9 @@ public class ApiSecurityConfig {
                     }
                     if (jwt.getExpiresAt() == null) {
                         throw new BadJwtException("A bearer token must expire");
+                    }
+                    if (jwt.getAudience() == null || !jwt.getAudience().contains(audience)) {
+                        throw new BadJwtException("This access token is not intended for the IAM API");
                     }
                     // OIDC ID tokens must not be usable as API access tokens.
                     if (jwt.getClaims().containsKey("nonce") || !jwt.getClaims().containsKey("scope")) {

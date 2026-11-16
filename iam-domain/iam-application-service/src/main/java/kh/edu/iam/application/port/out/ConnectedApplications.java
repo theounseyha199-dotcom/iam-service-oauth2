@@ -1,16 +1,17 @@
 package kh.edu.iam.application.port.out;
 
+import java.util.List;
+import java.util.UUID;
+
 import kh.edu.iam.application.account.result.ConnectedAppResult;
 
-import java.util.List;
-
 /**
- * Authorization adapter state; callers supply the authenticated internal user's canonical username.
+ * Authorization adapter state; callers supply the authenticated internal user's stable UUID.
  */
 public interface ConnectedApplications {
-    List<ConnectedAppResult> list(String username);
+    List<ConnectedAppResult> list(UUID userUuid);
 
     ConnectedAppResult describe(String clientId, java.util.Set<String> requestedScopes);
 
-    void revoke(String username, String applicationId);
+    void revoke(UUID userUuid, String applicationId);
 }

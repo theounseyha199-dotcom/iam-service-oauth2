@@ -1,14 +1,13 @@
 package kh.edu.iam.infrastructure.security;
 
-import kh.edu.iam.application.user.usecase.RecordLoginAttemptUseCase;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.stereotype.Component;
+
+import kh.edu.iam.application.user.usecase.RecordLoginAttemptUseCase;
 
 @Component
 @RequiredArgsConstructor
@@ -19,7 +18,7 @@ public final class LoginAttemptListener {
     @EventListener
     public void success(AuthenticationSuccessEvent event) {
         if (event.getAuthentication().getPrincipal() instanceof IamUserPrincipal principal) {
-            record(principal.getUsername(), true);
+            record(principal.loginName(), true);
         }
     }
 

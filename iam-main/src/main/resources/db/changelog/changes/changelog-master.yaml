@@ -36,3 +36,6 @@ databaseChangeLog:
   - include:
       file: 012-management-review.sql
       relativeToChangelogFile: true
+  - include:
+      file: 013-stable-oauth-subjects.sql
+      relativeToChangelogFile: true

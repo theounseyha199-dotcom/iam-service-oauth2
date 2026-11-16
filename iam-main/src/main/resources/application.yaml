@@ -42,6 +42,7 @@ app:
     geoip-database: ${IAM_GEOIP_DATABASE:}
     mail-from: ${IAM_MAIL_FROM:no-reply@localhost}
     issuer: ${IAM_ISSUER:http://localhost:9000}
+    api-audience: ${IAM_API_AUDIENCE:iam-api}
     signing-key-file: ${IAM_SIGNING_KEY_FILE:.local/iam-signing-key.json}
     clients:
       oidc:

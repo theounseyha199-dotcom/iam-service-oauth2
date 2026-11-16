@@ -1,18 +1,5 @@
 package kh.edu.iam.infrastructure.security;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
-import kh.edu.iam.application.user.result.AuthUserResult;
-
-import org.springframework.security.core.CredentialsContainer;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
@@ -20,6 +7,18 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.springframework.security.core.CredentialsContainer;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import kh.edu.iam.application.user.result.AuthUserResult;
 
 /**
  * Internal subject and authorities survive authentication; password credentials are erased.
@@ -119,6 +118,12 @@ public final class IamUserPrincipal implements UserDetails, CredentialsContainer
 
     @Override
     public String getUsername() {
+        // Spring uses this value as Authentication.getName() and OAuth principal_name.
+        // Login lookup still accepts the editable username/email; ownership must not.
+        return uuid.toString();
+    }
+
+    public String loginName() {
         return username;
     }
 

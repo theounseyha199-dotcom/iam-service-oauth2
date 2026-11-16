@@ -1,11 +1,13 @@
 package kh.edu.iam.infrastructure.adapter;
 
-import kh.edu.iam.application.account.result.ConnectedAppResult;
-import kh.edu.iam.application.exception.ApplicationException;
-import kh.edu.iam.application.port.out.ConnectedApplications;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
 import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationService;
@@ -13,11 +15,9 @@ import org.springframework.security.oauth2.server.authorization.client.Registere
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import kh.edu.iam.application.account.result.ConnectedAppResult;
+import kh.edu.iam.application.exception.ApplicationException;
+import kh.edu.iam.application.port.out.ConnectedApplications;
 
 @Component
 @RequiredArgsConstructor
@@ -29,14 +29,15 @@ public class JdbcConnectedApplications implements ConnectedApplications {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ConnectedAppResult> list(String username) {
+    public List<ConnectedAppResult> list(UUID userUuid) {
+        String subject = userUuid.toString();
         var ids =
-                jdbc.queryForList(
-                        "SELECT registered_client_id FROM oauth2_authorization_consent WHERE principal_name = ? "
-                                + "UNION SELECT registered_client_id FROM oauth2_authorization WHERE principal_name = ?",
-                        String.class,
-                        username,
-                        username);
+            jdbc.queryForList(
+                "SELECT registered_client_id FROM oauth2_authorization_consent WHERE principal_name = ? "
+                    + "UNION SELECT registered_client_id FROM oauth2_authorization WHERE principal_name = ?",
+                String.class,
+                subject,
+                subject);
         var result = new ArrayList<ConnectedAppResult>();
         for (String id : ids) {
             var client = clients.findById(id);
@@ -44,11 +45,11 @@ public class JdbcConnectedApplications implements ConnectedApplications {
                 continue;
             }
             var scopes = new TreeSet<String>();
-            var consent = consents.findById(id, username);
+            var consent = consents.findById(id, subject);
             if (consent != null) {
                 scopes.addAll(consent.getScopes());
             }
-            for (String authorizationId : authorizationIds(username, id)) {
+            for (String authorizationId : authorizationIds(subject, id)) {
                 var authorization = authorizations.findById(authorizationId);
                 if (authorization != null) {
                     scopes.addAll(authorization.getAuthorizedScopes());
@@ -72,15 +73,16 @@ public class JdbcConnectedApplications implements ConnectedApplications {
 
     @Override
     @Transactional
-    public void revoke(String username, String applicationId) {
-        var consent = consents.findById(applicationId, username);
-        var ids = authorizationIds(username, applicationId);
+    public void revoke(UUID userUuid, String applicationId) {
+        String subject = userUuid.toString();
+        var consent = consents.findById(applicationId, subject);
+        var ids = authorizationIds(subject, applicationId);
         if (consent == null && ids.isEmpty()) {
             throw new ApplicationException("not_found", "Connected application not found");
         }
         for (String id : ids) {
             var authorization = authorizations.findById(id);
-            if (authorization != null && username.equals(authorization.getPrincipalName())) {
+            if (authorization != null && subject.equals(authorization.getPrincipalName())) {
                 authorizations.remove(authorization);
             }
         }
@@ -89,11 +91,11 @@ public class JdbcConnectedApplications implements ConnectedApplications {
         }
     }
 
-    private List<String> authorizationIds(String username, String clientId) {
+    private List<String> authorizationIds(String subject, String clientId) {
         return jdbc.queryForList(
-                "SELECT id FROM oauth2_authorization WHERE principal_name = ? AND registered_client_id = ?",
-                String.class,
-                username,
-                clientId);
+            "SELECT id FROM oauth2_authorization WHERE principal_name = ? AND registered_client_id = ?",
+            String.class,
+            subject,
+            clientId);
     }
 }
