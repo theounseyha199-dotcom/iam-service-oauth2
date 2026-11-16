@@ -90,7 +90,7 @@ export function Activity({ history = false, audit = false, user }) {
                                     key: "status",
                                     render: (r) => (
                                         <span
-                                            className={`workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.68rem] text-primary ${r.success ? "" : "failed bg-card! text-destructive!"}`}
+                                            className={`workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.8125rem] text-primary ${r.success ? "" : "failed bg-card! text-destructive!"}`}
                                         >
                                             {t(
                                                 r.success

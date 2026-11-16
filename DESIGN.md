@@ -260,3 +260,29 @@ and retains manual UUID entry for administrators without list permissions.
 Page headings derive the Management label and access badge from the current
 management panel, rather than the viewer’s permissions. Connected apps uses a
 compact title without the eyebrow, generic introduction, or access badge.
+
+## Dashboard typography
+
+Page titles use 28–30px, section headings 16–18px, and body copy, navigation,
+labels, table values, and controls 14px. Table headers and breadcrumbs use 13px;
+secondary metadata uses 12–13px. These sizes use rem units in the existing shared
+heading, table, field, and navigation owners. Mobile keeps readable text sizes
+and allows wrapping or horizontal table scrolling rather than shrinking type.
+
+Input placeholders provide short, localized format examples, never values or
+required instructions. Visible labels, hints, autocomplete, and validation remain
+authoritative. Passwords use action prompts rather than sample credentials.
+Date and numeric controls keep native formatting and existing defaults.
+
+Sidebar typography is intentionally 5px larger than the dashboard scale:
+19px navigation, identity name and sign-out; 17px group labels; 18px identity
+metadata; 20px brand name and 15px brand caption. Navigation rows grow and wrap
+long labels in both desktop and mobile drawers; collapsed mode stays icon-only.
+
+Accounts whose only role is USER never receive Management navigation, even when
+they hold a direct administrative permission. Other roles retain permission-based
+menu visibility; API authorization continues to enforce effective permissions.
+
+Khmer workspace copy follows the supplied mixed Khmer/English terminology:
+OAuth labels, token names, and technical identifiers stay in English, while
+explanations and actions use the provided Khmer wording.

@@ -37,7 +37,7 @@ export function Sessions({ user }) {
     const editable = !user || can("user:update");
     return (
         <>
-            <p className="hint text-sm text-muted-foreground [.page_&]:m-0! [.page_&]:rounded [.page_&]:border-s-2 [.page_&]:border-brand-200 [.page_&]:bg-slate-50 [.page_&]:px-4 [.page_&]:py-3 [.dashboard-root_&]:text-xs">
+            <p className="hint text-sm text-muted-foreground [.page_&]:m-0! [.page_&]:rounded [.page_&]:border-s-2 [.page_&]:border-brand-200 [.page_&]:bg-slate-50 [.page_&]:px-4 [.page_&]:py-3 [.dashboard-root_&]:text-sm">
                 {t("sessionNote")}
             </p>
             {editable && (
@@ -59,7 +59,7 @@ export function Sessions({ user }) {
                                             <DeviceDetails value={row.device} />
                                         </span>
                                         {row.current && (
-                                            <span className="workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.68rem] text-primary">
+                                            <span className="workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.8125rem] text-primary">
                                                 {t("current")}
                                             </span>
                                         )}

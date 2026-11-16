@@ -13,7 +13,7 @@ export function WorkspaceDialog({
     return (
         <dialog
             ref={dialogRef}
-            className="workspace-dialog m-auto w-[calc(100%-2rem)] max-w-[540px] rounded-xl border border-border bg-card p-8 text-foreground wrap-anywhere backdrop:bg-slate-900/45 [&_h2]:m-0 [&_h2]:text-[1.2rem] [&_h2]:font-semibold [&_p]:my-4 [&_p]:text-[.85rem] [&_p]:text-slate-600"
+            className="workspace-dialog m-auto w-[calc(100%-2rem)] max-w-[540px] rounded-xl border border-border bg-card p-8 text-foreground wrap-anywhere backdrop:bg-slate-900/45 [&_h2]:m-0 [&_h2]:text-[1.2rem] [&_h2]:font-semibold [&_p]:my-4 [&_p]:text-sm [&_p]:text-slate-600"
             aria-labelledby="workspace-confirm-title"
             aria-describedby="workspace-confirm-description"
             onCancel={(e) => {

@@ -14,7 +14,7 @@ import { DeactivationRequests } from "@/features/management/DeactivationRequests
 export function WorkspacePanels() {
     const { data, state } = useWorkspace();
     const panel = state.panel ?? "overview";
-    const { nav, admin } = dashboardNavigation(data.permissions);
+    const { nav, admin } = dashboardNavigation(data.permissions, data.roles);
     if (![...nav, ...admin].some(([key]) => key === panel))
         return <ErrorNotice error={{ status: 403 }} />;
     if (managementResources[panel]) return <RecordList kind={panel} />;

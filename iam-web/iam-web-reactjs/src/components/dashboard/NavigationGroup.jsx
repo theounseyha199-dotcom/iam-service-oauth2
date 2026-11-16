@@ -47,7 +47,9 @@ export function NavigationGroup({ label, items, panel, t, url }) {
     const { setOpenMobile } = useSidebar();
     return (
         <SidebarGroup>
-            <SidebarGroupLabel>{label}</SidebarGroupLabel>
+            <SidebarGroupLabel className="h-auto min-h-8 py-1 text-[1.0625rem] leading-normal">
+                {label}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
                 <nav aria-label={label}>
                     <SidebarMenu>
@@ -56,6 +58,7 @@ export function NavigationGroup({ label, items, panel, t, url }) {
                             return (
                                 <SidebarMenuItem key={key}>
                                     <SidebarMenuButton
+                                        className="h-auto min-h-11 text-[1.1875rem] [&>span:last-child]:whitespace-normal [&>span:last-child]:overflow-visible [&>span:last-child]:text-clip [&>span:last-child]:wrap-anywhere"
                                         asChild
                                         isActive={panel === key}
                                         tooltip={t(key)}

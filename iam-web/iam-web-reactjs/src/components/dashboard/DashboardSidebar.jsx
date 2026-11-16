@@ -29,7 +29,7 @@ export function DashboardSidebar({ bootstrap, t, nav, admin, panel }) {
                     className="dashboard-brand flex min-h-9 items-center gap-[.65rem] text-foreground"
                 >
                     <BrandLogo className="size-9 group-data-[collapsible=icon]:size-8" />
-                    <span className="dashboard-brand-copy grid gap-px whitespace-nowrap group-data-[collapsible=icon]:hidden [&_strong]:text-[15px] [&_strong]:font-extrabold [&_strong]:tracking-[.08em] [&>span]:text-[10px] [&>span]:text-slate-500">
+                    <span className="dashboard-brand-copy grid gap-px whitespace-nowrap group-data-[collapsible=icon]:hidden [&_strong]:text-[1.25rem] [&_strong]:font-extrabold [&_strong]:tracking-[.08em] [&>span]:text-[.9375rem] [&>span]:text-slate-500">
                         <strong>ISTAD</strong>
                         <span>{t("identityAccess")}</span>
                     </span>
@@ -60,9 +60,9 @@ export function DashboardSidebar({ bootstrap, t, nav, admin, panel }) {
                         name={[data.claims?.givenName, data.claims?.familyName]
                             .filter(Boolean)
                             .join(" ")}
-                        className="size-8 text-xs"
+                        className="size-8 text-[1.0625rem]"
                     />
-                    <span className="dashboard-user-copy grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden [&_strong]:text-[.8rem] [&_strong]:text-foreground [&>span]:text-[.66rem] [&>span]:text-slate-500 [&>span]:wrap-anywhere">
+                    <span className="dashboard-user-copy grid min-w-0 gap-0.5 group-data-[collapsible=icon]:hidden [&_strong]:text-[1.1875rem] [&_strong]:text-foreground [&>span]:text-[1.125rem] [&>span]:text-slate-500 [&>span]:wrap-anywhere">
                         <strong>
                             {data.claims?.givenName} {data.claims?.familyName}
                         </strong>
@@ -79,7 +79,7 @@ export function DashboardSidebar({ bootstrap, t, nav, admin, panel }) {
                     <Button
                         type="submit"
                         variant="ghost"
-                        className="dashboard-logout w-full justify-start text-[.78rem] group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-2"
+                        className="dashboard-logout w-full justify-start text-[1.1875rem] group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:overflow-hidden group-data-[collapsible=icon]:p-2"
                         disabled={signingOut}
                     >
                         <LogOut aria-hidden="true" />

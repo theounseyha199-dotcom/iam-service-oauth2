@@ -17,7 +17,7 @@ export function DashboardHeader({ bootstrap, t, panel }) {
     };
     return (
         <header className="dashboard-header flex min-h-[65px] items-center justify-between gap-4 border-b border-border bg-card px-8 py-3 max-md:gap-2 max-md:px-4">
-            <div className="dashboard-breadcrumb flex min-w-0 items-center gap-3 text-xs text-slate-500 max-md:gap-2 max-md:[&>svg]:hidden">
+            <div className="dashboard-breadcrumb flex min-w-0 items-center gap-3 text-[.8125rem] text-slate-500 max-md:gap-2 max-md:[&>svg]:hidden">
                 <SidebarTrigger
                     aria-label={t("toggleNavigation")}
                     title={t("toggleNavigation")}

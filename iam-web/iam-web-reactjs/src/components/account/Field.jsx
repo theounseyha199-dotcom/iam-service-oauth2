@@ -24,6 +24,36 @@ export function Field({
         name,
         error ?? data.errors?.[name] ?? data.fieldErrors?.[name],
     );
+    const placeholderName =
+        autoComplete === "current-password"
+            ? "currentPassword"
+            : label === "login.username"
+              ? "loginUsername"
+              : name;
+    const placeholderFields = new Set([
+        "username",
+        "loginUsername",
+        "email",
+        "givenName",
+        "familyName",
+        "middleName",
+        "nickname",
+        "phoneNumber",
+        "pictureUrl",
+        "profileUrl",
+        "websiteUrl",
+        "zoneinfo",
+        "streetAddress",
+        "locality",
+        "region",
+        "postalCode",
+        "country",
+        "password",
+        "currentPassword",
+        "newPassword",
+        "confirmPassword",
+        "code",
+    ]);
     const input = (
         <Input
             {...registration}
@@ -39,6 +69,11 @@ export function Field({
             required={required}
             maxLength={maxLength ?? (password ? 1000 : 255)}
             inputMode={inputMode}
+            placeholder={
+                placeholderFields.has(placeholderName) && type !== "date"
+                    ? t(`placeholder.${placeholderName}`)
+                    : undefined
+            }
             autoComplete={
                 autoComplete ??
                 (password
@@ -58,7 +93,7 @@ export function Field({
         />
     );
     return (
-        <div className="field m-0 min-w-0 [&>label]:mb-2 [&>label]:block [&>label]:text-sm [&>label]:font-semibold [&>label]:text-foreground [.dashboard-root_&>label]:mb-[.4rem] [.dashboard-root_&>label]:text-[.78rem] [.dashboard-root_&>label]:font-medium">
+        <div className="field m-0 min-w-0 [&>label]:mb-2 [&>label]:block [&>label]:text-sm [&>label]:font-semibold [&>label]:text-foreground [.dashboard-root_&>label]:mb-[.4rem] [.dashboard-root_&>label]:text-sm [.dashboard-root_&>label]:font-medium">
             <label htmlFor={name}>
                 {t(label ?? `field.${name}`)}{" "}
                 {!required && (
@@ -100,7 +135,7 @@ export function Field({
             )}
             <p
                 id={`${name}-error`}
-                className="field-error mt-1! mb-0! min-h-[1.3em] text-[.8125rem] text-destructive [.dashboard-root_&]:min-h-[1.15em] [.dashboard-root_&]:text-[.7rem]"
+                className="field-error mt-1! mb-0! min-h-[1.3em] text-[.8125rem] text-destructive [.dashboard-root_&]:min-h-[1.15em] [.dashboard-root_&]:text-[.8125rem]"
                 aria-live="polite"
             >
                 {errorCode ? t(errorCode) : ""}

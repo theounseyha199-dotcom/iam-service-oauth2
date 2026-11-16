@@ -12,7 +12,7 @@ export function Link({ to, label, children, button = false }) {
                           variant: "outline",
                           size: "account",
                           className:
-                              "button inline-flex items-center justify-center gap-2 rounded-lg border border-primary bg-card px-[1.125rem] py-3 text-center font-semibold text-brand-800 no-underline hover:bg-accent active:bg-brand-100 [.dashboard-root_&]:rounded-md [.dashboard-root_&]:border-border [.dashboard-root_&]:px-[.8rem] [.dashboard-root_&]:py-[.45rem] [.dashboard-root_&]:text-xs secondary border-primary bg-card text-brand-800 hover:bg-accent active:bg-brand-100",
+                              "button inline-flex items-center justify-center gap-2 rounded-lg border border-primary bg-card px-[1.125rem] py-3 text-center font-semibold text-brand-800 no-underline hover:bg-accent active:bg-brand-100 [.dashboard-root_&]:rounded-md [.dashboard-root_&]:border-border [.dashboard-root_&]:px-[.8rem] [.dashboard-root_&]:py-[.45rem] [.dashboard-root_&]:text-sm secondary border-primary bg-card text-brand-800 hover:bg-accent active:bg-brand-100",
                       })
                     : "text-brand-800 underline underline-offset-[.2em] hover:text-brand-600 active:text-brand-900"
             }

@@ -27,6 +27,7 @@ export function AssignmentPicker({ kind, field }) {
             <div className="flex gap-2">
                 <Input
                     id={`${id}-search`}
+                    placeholder={t("placeholders.recordSearch")}
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {

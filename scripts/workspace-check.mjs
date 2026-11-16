@@ -389,6 +389,8 @@ try {
     await expect(machine).toBeDisabled();
     await expect(page.locator("#w-clientSecret")).not.toBeVisible();
     await page.getByLabel("Confidential client", { exact: true }).check();
+    await expect(page.locator("#w-clientId")).toHaveAttribute("placeholder", "e.g. istad-dashboard");
+    await expect(page.locator("#w-clientName")).toHaveAttribute("placeholder", "e.g. ISTAD Dashboard");
     await page.locator("#w-clientId").fill("client" + name);
     await page.locator("#w-clientName").fill("Browser test client");
     await page
@@ -549,7 +551,7 @@ try {
         .first()
         .click();
     await expect(
-        page.getByRole("group", { name: "ប្រភេទការផ្តល់សិទ្ធិ", exact: true }),
+        page.getByRole("group", { name: "Grant Types", exact: true }),
     ).toBeVisible();
     await expect(
         page.getByRole("checkbox", { name: "orders:read", exact: true }),
@@ -786,7 +788,7 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.locator('a[lang="km"]').click();
     await expect(
-        page.getByRole("heading", { name: "សំណើបិទគណនី", exact: true }).first(),
+        page.getByRole("heading", { name: "សំណើបិទដំណើរការគណនី", exact: true }).first(),
     ).toBeVisible();
     if (
         await page.evaluate(

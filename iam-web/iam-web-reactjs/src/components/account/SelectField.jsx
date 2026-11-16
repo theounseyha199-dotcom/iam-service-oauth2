@@ -5,7 +5,7 @@ export function SelectField({ name, choices }) {
     const { t, data } = usePage();
     const { registration, error } = useFormField(name, data.errors?.[name]);
     return (
-        <div className="field m-0 min-w-0 [&>label]:mb-2 [&>label]:block [&>label]:text-sm [&>label]:font-semibold [&>label]:text-foreground [.dashboard-root_&>label]:mb-[.4rem] [.dashboard-root_&>label]:text-[.78rem] [.dashboard-root_&>label]:font-medium">
+        <div className="field m-0 min-w-0 [&>label]:mb-2 [&>label]:block [&>label]:text-sm [&>label]:font-semibold [&>label]:text-foreground [.dashboard-root_&>label]:mb-[.4rem] [.dashboard-root_&>label]:text-sm [.dashboard-root_&>label]:font-medium">
             <label htmlFor={name}>{t(`field.${name}`)}</label>
             <select
                 {...registration}
@@ -25,7 +25,7 @@ export function SelectField({ name, choices }) {
             </select>
             <p
                 id={`${name}-error`}
-                className="field-error mt-1! mb-0! min-h-[1.3em] text-[.8125rem] text-destructive [.dashboard-root_&]:min-h-[1.15em] [.dashboard-root_&]:text-[.7rem]"
+                className="field-error mt-1! mb-0! min-h-[1.3em] text-[.8125rem] text-destructive [.dashboard-root_&]:min-h-[1.15em] [.dashboard-root_&]:text-[.8125rem]"
             >
                 {error ? t(error) : ""}
             </p>

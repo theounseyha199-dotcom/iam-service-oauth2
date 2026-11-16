@@ -7,7 +7,7 @@ export function ResourceState({ resource, children }) {
     if (resource.loading)
         return (
             <div
-                className="workspace-state min-h-40 py-8 text-[.8rem] text-slate-500"
+                className="workspace-state min-h-40 py-8 text-sm text-slate-500"
                 role="status"
             >
                 {t("loading")}
@@ -15,7 +15,7 @@ export function ResourceState({ resource, children }) {
         );
     if (resource.error)
         return (
-            <div className="workspace-state min-h-40 py-8 text-[.8rem] text-slate-500">
+            <div className="workspace-state min-h-40 py-8 text-sm text-slate-500">
                 <ErrorNotice error={resource.error} />
                 <Button variant="outline" onClick={resource.reload}>
                     {t("retry")}

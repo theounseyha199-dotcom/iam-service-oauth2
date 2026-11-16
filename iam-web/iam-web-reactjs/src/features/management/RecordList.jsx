@@ -45,7 +45,7 @@ export function RecordList({ kind }) {
                   {
                       key: "status",
                       render: (r) => (
-                          <span className="workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.68rem] text-primary">
+                          <span className="workspace-badge m-[.15rem] inline-block rounded-[5px] border border-border bg-accent px-2 py-[.15rem] text-[.8125rem] text-primary">
                               {t(r.enabled ? "enabled" : "disabled")}
                           </span>
                       ),
@@ -119,7 +119,7 @@ export function RecordList({ kind }) {
                                 {
                                     key: "actions",
                                     render: (row) => (
-                                        <div className="workspace-row-actions flex flex-wrap gap-2 [&_button]:h-[30px] [&_button]:px-[.65rem] [&_button]:py-[.35rem] [&_button]:text-[.7rem]">
+                                        <div className="workspace-row-actions flex flex-wrap gap-2 [&_button]:min-h-9 [&_button]:px-[.65rem] [&_button]:py-[.35rem] [&_button]:text-sm">
                                             <Button
                                                 variant="outline"
                                                 onClick={() =>

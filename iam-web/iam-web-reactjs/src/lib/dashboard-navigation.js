@@ -24,18 +24,26 @@ export const accountPanels = {
     "revoke-app": "apps",
     consent: "apps",
 };
-export function dashboardNavigation(permissions = []) {
+export function dashboardNavigation(permissions = [], roles = []) {
+    const userOnly = roles.length > 0 && roles.every((role) => role === "USER");
+    const managementPermissions = userOnly ? [] : permissions;
     return {
         nav: accountNavigation,
         admin: [
-            ...(permissions.includes("user:read") ? [["reviews"]] : []),
+            ...(managementPermissions.includes("user:read")
+                ? [["reviews"]]
+                : []),
             ...Object.entries(managementResources)
                 .filter(([, resource]) =>
-                    permissions.includes(resource + ":read"),
+                    managementPermissions.includes(resource + ":read"),
                 )
                 .map(([key]) => [key]),
-            ...(permissions.includes("audit:read") ? [["audit"]] : []),
-            ...(permissions.includes("policy:read") ? [["policy"]] : []),
+            ...(managementPermissions.includes("audit:read")
+                ? [["audit"]]
+                : []),
+            ...(managementPermissions.includes("policy:read")
+                ? [["policy"]]
+                : []),
         ],
     };
 }

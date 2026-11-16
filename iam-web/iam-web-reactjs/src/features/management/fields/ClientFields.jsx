@@ -138,6 +138,7 @@ export function ClientFields({ row }) {
                     <div className="flex flex-wrap items-start gap-2">
                         <ChoiceInput
                             id="w-customScope"
+                            placeholder={t("placeholders.customScope")}
                             ref={customInput}
                             value={draft}
                             onChange={(event) => {

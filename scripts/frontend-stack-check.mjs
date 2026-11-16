@@ -1,3 +1,4 @@
+import { dashboardNavigation } from "../iam-web/iam-web-reactjs/src/lib/dashboard-navigation.js";
 import assert from "node:assert/strict";
 import { generateClientSecret } from "../iam-web/iam-web-reactjs/src/lib/client-secret.js";
 import { readFile } from "node:fs/promises";
@@ -216,4 +217,25 @@ assert.equal(
 assert.equal(i18n.getFixedT("km", "workspace")("overview"), km.overview);
 console.log(
     "Zod schema and i18next checks passed: passwords, OTP, email, numeric bounds, UUIDs, client secrets, interpolation and English/Khmer resource parity.",
+);
+
+const managementPermissions = [
+    "user:read",
+    "role:read",
+    "permission:read",
+    "client:read",
+    "audit:read",
+    "policy:read",
+];
+assert.equal(
+    dashboardNavigation(managementPermissions, ["USER"]).admin.length,
+    0,
+);
+assert.equal(
+    dashboardNavigation(managementPermissions, ["USER", "ADMIN"]).admin.length,
+    7,
+);
+assert.equal(dashboardNavigation([], ["ADMIN"]).admin.length, 0);
+assert.ok(
+    dashboardNavigation([], ["USER"]).nav.some(([key]) => key === "profile"),
 );
