@@ -357,19 +357,216 @@ try {
     await page
         .getByRole("button", { name: "Create · OAuth2 clients", exact: true })
         .click();
+    await expect(
+        page.getByLabel("Application name", { exact: true }),
+    ).toBeVisible();
+    const grants = page.getByRole("group", {
+        name: "Grant types",
+        exact: true,
+    });
+    const code = grants.getByRole("checkbox", {
+        name: "Authorization Code",
+        exact: true,
+    });
+    const refresh = grants.getByRole("checkbox", {
+        name: "Refresh Token",
+        exact: true,
+    });
+    const machine = grants.getByRole("checkbox", {
+        name: "Client Credentials",
+        exact: true,
+    });
+    await code.uncheck();
+    await expect(refresh).not.toBeChecked();
+    await expect(refresh).toBeDisabled();
+    await code.focus();
+    await page.keyboard.press("Space");
+    await expect(code).toBeChecked();
+    await refresh.check();
+    await machine.check();
+    await page.getByLabel("Confidential client", { exact: true }).uncheck();
+    await expect(machine).not.toBeChecked();
+    await expect(machine).toBeDisabled();
+    await expect(page.locator("#w-clientSecret")).not.toBeVisible();
+    await page.getByLabel("Confidential client", { exact: true }).check();
     await page.locator("#w-clientId").fill("client" + name);
     await page.locator("#w-clientName").fill("Browser test client");
     await page
-        .locator("#w-clientSecret")
-        .fill("browser-client-secret-123456789");
+        .getByRole("button", { name: "Generate secret", exact: true })
+        .click();
+    const generatedSecret = await page.locator("#w-clientSecret").inputValue();
+    expect(generatedSecret).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    await expect(page.locator("#w-clientSecret")).toHaveAttribute(
+        "type",
+        "password",
+    );
+    await page
+        .context()
+        .grantPermissions(["clipboard-read", "clipboard-write"]);
+    await page
+        .getByRole("button", { name: "Copy secret", exact: true })
+        .click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+        generatedSecret,
+    );
+    await page.evaluate(() => {
+        window.restoreClipboardWrite = navigator.clipboard.writeText.bind(
+            navigator.clipboard,
+        );
+        navigator.clipboard.writeText = async () => {
+            throw new Error("Clipboard denied for test");
+        };
+    });
+    await page
+        .getByRole("button", { name: "Copy secret", exact: true })
+        .click();
+    await expect(
+        page.getByRole("status").filter({ hasText: "Copy is unavailable" }),
+    ).toBeVisible();
+    await page.evaluate(() => {
+        navigator.clipboard.writeText = window.restoreClipboardWrite;
+    });
     await page.locator("#w-redirectUris").fill("https://example.com/callback");
+    await page.getByRole("checkbox", { name: "phone", exact: true }).check();
+    await page.locator("#w-customScope").fill("invalid scope");
+    await page
+        .getByRole("button", { name: "Add custom scope", exact: true })
+        .click();
+    await expect(page.locator("#w-customScope")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+    );
+    await page.locator("#w-customScope").fill("openid");
+    await page
+        .getByRole("button", { name: "Add custom scope", exact: true })
+        .click();
+    await expect(page.locator("#w-customScope-error")).toContainText(
+        "already listed",
+    );
+    await page.locator("#w-customScope").fill("orders:read");
+    await page.locator("#w-customScope").press("Enter");
+    await expect(
+        page.getByRole("checkbox", { name: "orders:read", exact: true }),
+    ).toBeChecked();
+    const createdClient = page.waitForRequest(
+        (request) =>
+            request.method() === "POST" &&
+            new URL(request.url()).pathname.endsWith("/workspace/api/clients"),
+    );
     await page
         .getByRole("button", { name: "Save changes", exact: true })
         .click();
     await expect(page.getByRole("table")).toContainText("client" + name);
-    await expect(page.getByRole("table")).not.toContainText(
-        "browser-client-secret",
+    const submitted = (await createdClient).postDataJSON();
+    expect(submitted.grantTypes).toEqual([
+        "authorization_code",
+        "refresh_token",
+    ]);
+    expect(submitted.scopes).toEqual([
+        "openid",
+        "profile",
+        "email",
+        "phone",
+        "orders:read",
+    ]);
+    await expect(page.getByRole("table")).not.toContainText(generatedSecret);
+    await page.reload();
+    await page
+        .getByRole("row")
+        .filter({ hasText: "client" + name })
+        .getByRole("button", { name: "Edit", exact: true })
+        .click();
+    await expect(
+        page.getByRole("checkbox", { name: "orders:read", exact: true }),
+    ).toBeChecked();
+    await expect(
+        page.getByRole("checkbox", { name: "phone", exact: true }),
+    ).toBeChecked();
+    await expect(page.locator("#w-clientSecret")).toHaveValue("");
+    await expect(
+        page.getByRole("button", { name: "Copy secret", exact: true }),
+    ).toBeDisabled();
+    await page
+        .getByRole("button", { name: "Generate secret", exact: true })
+        .click();
+    expect(await page.locator("#w-clientSecret").inputValue()).not.toBe(
+        generatedSecret,
     );
+    await page
+        .getByRole("button", { name: "Back to list", exact: true })
+        .click();
+    await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "Discard changes", exact: true })
+        .click();
+    await page
+        .getByRole("row")
+        .filter({ hasText: "client" + name })
+        .getByRole("button", { name: "Edit", exact: true })
+        .click();
+    await expect(page.locator("#w-clientSecret")).toHaveValue("");
+    await page.locator("#w-clientName").fill("Updated browser client");
+    await page
+        .getByRole("button", { name: "Save changes", exact: true })
+        .click();
+    await expect(page.getByRole("table")).toContainText(
+        "Updated browser client",
+    );
+    const introspection = await page.request.post(base + "/oauth2/introspect", {
+        headers: {
+            Authorization:
+                "Basic " +
+                Buffer.from("client" + name + ":" + generatedSecret).toString(
+                    "base64",
+                ),
+        },
+        form: { token: "unissued-browser-test-token" },
+    });
+    expect(introspection.status()).toBe(200);
+    expect((await introspection.json()).active).toBe(false);
+    await page.reload();
+    await page
+        .getByRole("row")
+        .filter({ hasText: "client" + name })
+        .getByRole("button", { name: "Edit", exact: true })
+        .click();
+    await expect(
+        page.getByRole("checkbox", { name: "orders:read", exact: true }),
+    ).toBeChecked();
+    await page.screenshot({
+        path: "verification/browser/client-options-desktop.png",
+        fullPage: true,
+    });
+    await page
+        .getByRole("button", { name: "Back to list", exact: true })
+        .click();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('a[lang="km"]').click();
+    await page
+        .getByRole("row")
+        .filter({ hasText: "client" + name })
+        .getByRole("button")
+        .first()
+        .click();
+    await expect(
+        page.getByRole("group", { name: "ប្រភេទការផ្តល់សិទ្ធិ", exact: true }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole("checkbox", { name: "orders:read", exact: true }),
+    ).toBeChecked();
+    if (
+        await page.evaluate(
+            () => document.documentElement.scrollWidth > innerWidth,
+        )
+    ) {
+        throw new Error("Client options overflow on Khmer mobile");
+    }
+    await page.screenshot({
+        path: "verification/browser/client-options-khmer-mobile.png",
+        fullPage: true,
+    });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(base + "/?panel=clients&lang=en");
     await management
         .getByRole("link", { name: "Audit logs", exact: true })
         .click();

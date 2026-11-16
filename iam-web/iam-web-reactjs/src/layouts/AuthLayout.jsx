@@ -1,5 +1,6 @@
 import { useNavigation } from "react-router";
 import { AppLink } from "@/components/AppLink";
+import { BrandLogo } from "@/components/BrandLogo";
 import { Card } from "@/components/ui/card";
 import { usePage } from "@/context/page-context";
 export function AuthLayout({ title, children }) {
@@ -11,10 +12,11 @@ export function AuthLayout({ title, children }) {
         <>
             <header className="site-header mx-auto flex max-w-[1160px] items-center justify-between gap-4 p-6 max-[700px]:px-4 max-[480px]:gap-2 max-[480px]:p-4 [&_nav]:flex [&_nav]:gap-1 [&_nav]:rounded-lg [&_nav]:border [&_nav]:border-border [&_nav]:bg-card [&_nav]:p-1 [&_nav_a]:rounded [&_nav_a]:px-3 [&_nav_a]:py-[.375rem] [&_nav_a]:text-[.8125rem] [&_nav_a]:no-underline [&_nav_a:hover]:bg-slate-100 [&_nav_a[aria-current=true]]:bg-accent [&_nav_a[aria-current=true]]:text-brand-800 max-[480px]:[&_nav_a]:px-2">
                 <AppLink
-                    className="brand m-0 text-xl font-extrabold tracking-[.12em] text-brand-800 no-underline max-[480px]:text-base max-[480px]:tracking-[.06em]"
+                    className="brand m-0 flex items-center gap-3 text-xl font-extrabold tracking-[.12em] text-brand-800 no-underline max-[480px]:text-base max-[480px]:tracking-[.06em]"
                     href={url("/login")}
                 >
-                    {t("common.brand")}
+                    <BrandLogo className="size-10 max-[480px]:size-8" />
+                    <span>{t("common.brand")}</span>
                 </AppLink>
                 <nav aria-label={t("common.language")}>
                     {["en", "km"].map((lang) => (

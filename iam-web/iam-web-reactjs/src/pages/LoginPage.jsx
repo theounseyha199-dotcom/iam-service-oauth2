@@ -5,18 +5,14 @@ import { Submit } from "@/components/account/Submit";
 import { Link } from "@/components/account/AccountLink";
 import { Providers } from "@/components/account/Providers";
 import { usePage } from "@/context/page-context";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function LoginPage() {
     const { data: d, t } = usePage();
     return (
         <>
-            <p className="eyebrow mb-2! mt-0! text-xs font-bold tracking-[.1em] text-brand-800">
-                <span
-                    className="identity-mark inline-flex size-8 items-center justify-center rounded-lg bg-primary text-xl font-extrabold text-white"
-                    aria-hidden="true"
-                >
-                    I
-                </span>
+            <p className="eyebrow mb-2! mt-0! flex items-center gap-2 text-xs font-bold tracking-[.1em] text-brand-800">
+                <BrandLogo className="size-8" />
                 {t("common.brand")}
             </p>
             <h1>{t("login.title")}</h1>

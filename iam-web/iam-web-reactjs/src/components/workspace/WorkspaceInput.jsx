@@ -15,6 +15,7 @@ export function Input({
     min,
     max,
     readOnly = false,
+    actions,
 }) {
     const { t } = useWorkspace();
     const [show, setShow] = useState(false);
@@ -68,6 +69,11 @@ export function Input({
                     </Button>
                 )}
             </div>
+            {actions && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {actions}
+                </div>
+            )}
             {hint && (
                 <p
                     className="hint text-sm text-muted-foreground [.page_&]:m-0! [.page_&]:rounded [.page_&]:border-s-2 [.page_&]:border-brand-200 [.page_&]:bg-slate-50 [.page_&]:px-4 [.page_&]:py-3 [.dashboard-root_&]:text-xs"

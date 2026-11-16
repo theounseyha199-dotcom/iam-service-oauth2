@@ -134,7 +134,9 @@ export function Overview() {
                     </ResourceState>
                 </section>
             </div>
-            {can("user:read") && <DeactivationRequests />}
+            {can("user:read") && (
+                <DeactivationRequests showStatusFilter={false} />
+            )}
         </>
     );
 }

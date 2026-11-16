@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ReviewDeactivation } from "@/features/management/ReviewDeactivation";
 
-export function DeactivationRequests() {
+export function DeactivationRequests({ showStatusFilter = true }) {
     const { t, can, data, formatDate } = useWorkspace();
     const [status, setStatus] = useState("PENDING");
     const [review, setReview] = useState(null);
@@ -17,23 +17,27 @@ export function DeactivationRequests() {
             <p className="my-3 text-sm text-muted-foreground">
                 {t("reviewQueueHint")}
             </p>
-            <label className="my-3 block max-w-xs">
-                {t("status")}
-                <select
-                    className="mt-2 block w-full"
-                    value={status}
-                    onChange={(event) => {
-                        setStatus(event.target.value);
-                        setReview(null);
-                    }}
-                >
-                    {["PENDING", "APPROVED", "REJECTED", ""].map((value) => (
-                        <option key={value} value={value}>
-                            {t(value || "all")}
-                        </option>
-                    ))}
-                </select>
-            </label>
+            {showStatusFilter && (
+                <label className="my-3 block max-w-xs">
+                    {t("status")}
+                    <select
+                        className="mt-2 block w-full"
+                        value={status}
+                        onChange={(event) => {
+                            setStatus(event.target.value);
+                            setReview(null);
+                        }}
+                    >
+                        {["PENDING", "APPROVED", "REJECTED", ""].map(
+                            (value) => (
+                                <option key={value} value={value}>
+                                    {t(value || "all")}
+                                </option>
+                            ),
+                        )}
+                    </select>
+                </label>
+            )}
             <ResourceState resource={r}>
                 {(rows) => (
                     <Table

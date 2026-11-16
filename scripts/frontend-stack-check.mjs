@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { generateClientSecret } from "../iam-web/iam-web-reactjs/src/lib/client-secret.js";
 import { readFile } from "node:fs/promises";
 import { accountSchema } from "../iam-web/iam-web-reactjs/src/schemas/account.js";
 import {
@@ -99,17 +100,60 @@ const client = {
     clientName: "Test",
     clientSecret: "",
     confidential: true,
-    grantTypes: "authorization_code",
+    grantTypes: ["authorization_code"],
     redirectUris: "https://example.com",
-    scopes: "openid",
+    scopes: ["openid"],
     accessMinutes: "5",
     refreshMinutes: "1440",
 };
+const generatedSecret = generateClientSecret();
+assert.match(generatedSecret, /^[A-Za-z0-9_-]{43}$/);
+assert.notEqual(generatedSecret, generateClientSecret());
+assert.equal(
+    recordSchema("clients", true).safeParse({
+        ...client,
+        clientSecret: generatedSecret,
+    }).success,
+    true,
+);
 invalid(recordSchema("clients", true), client, "clientSecret");
 assert.equal(recordSchema("clients", false).safeParse(client).success, true);
 assert.equal(
     recordSchema("clients", true).safeParse({ ...client, confidential: false })
         .success,
+    true,
+);
+invalid(
+    recordSchema("clients", false),
+    { ...client, grantTypes: [] },
+    "grantTypes",
+);
+invalid(
+    recordSchema("clients", false),
+    { ...client, grantTypes: ["refresh_token"] },
+    "grantTypes",
+);
+invalid(
+    recordSchema("clients", false),
+    { ...client, confidential: false, grantTypes: ["client_credentials"] },
+    "grantTypes",
+);
+invalid(recordSchema("clients", false), { ...client, scopes: [] }, "scopes");
+invalid(
+    recordSchema("clients", false),
+    { ...client, scopes: ["invalid scope"] },
+    "scopes",
+);
+invalid(
+    recordSchema("clients", false),
+    { ...client, redirectUris: "" },
+    "redirectUris",
+);
+assert.equal(
+    recordSchema("clients", false).safeParse({
+        ...client,
+        scopes: ["openid", "profile", "email", "orders:read"],
+    }).success,
     true,
 );
 invalid(

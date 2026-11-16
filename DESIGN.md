@@ -228,7 +228,24 @@ only when no server-owned error key is available, avoiding duplicate alerts.
 
 ## Management workflows
 
+`components/BrandLogo.jsx` displays the supplied `src/assets/logo.png` in the
+authentication header and dashboard sidebar without cropping or recoloring it.
+The same PNG supplies the browser favicon. Adjacent brand text or a link label
+provides its accessible name, including when the sidebar is collapsed.
+
+OAuth application grant types and standard scopes use labeled checkbox groups with
+short English/Khmer explanations. Refresh Token requires Authorization Code;
+Client Credentials requires a confidential application. Removing a prerequisite
+also clears the dependent grant. Custom scopes use a validated add field and remain
+available when editing. The REST API continues to receive arrays of grant/scope strings.
+Client-secret generation uses 32 bytes from Web Crypto and keeps the generated value
+masked. Generate and Copy are explicit actions; generation marks the form unsaved,
+and only Save applies a replacement. Existing stored secrets are never returned to
+the browser. Clipboard failures provide a manual-copy instruction in the active language.
+
 Deactivation requests have their own permission-gated Management navigation item.
+The overview shows pending requests without a status filter; the dedicated requests
+page retains the status dropdown for reviewing pending and completed requests.
 Review uses the shared table, ActionForm, fields and confirmation dialog. Pending,
 approved and rejected states use localized text, with required review notes and a
 visible decision date. The owner's request page also shows rejection notes.
@@ -239,3 +256,7 @@ system activities with actor names when audit access is available. User-security
 tools show current enabled/locked status and only the relevant state-change actions.
 Assignment search reuses existing list APIs, selects into the validated UUID field,
 and retains manual UUID entry for administrators without list permissions.
+
+Page headings derive the Management label and access badge from the current
+management panel, rather than the viewer’s permissions. Connected apps uses a
+compact title without the eyebrow, generic introduction, or access badge.

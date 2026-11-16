@@ -1,6 +1,7 @@
 import { split } from "@/lib/workspace-utils";
 export function buildRecordPayload({ kind, fresh, form, record }) {
-    const fields = Object.fromEntries(new FormData(form));
+    const formData = new FormData(form);
+    const fields = Object.fromEntries(formData);
     let body;
     if (kind === "users")
         body = fresh
@@ -37,9 +38,9 @@ export function buildRecordPayload({ kind, fresh, form, record }) {
             clientName: fields.clientName,
             clientSecret: fields.clientSecret,
             confidential: fields.confidential === "on",
-            grantTypes: split(fields.grantTypes),
+            grantTypes: formData.getAll("grantTypes"),
             redirectUris: split(fields.redirectUris),
-            scopes: split(fields.scopes),
+            scopes: formData.getAll("scopes"),
             accessMinutes: Number(fields.accessMinutes),
             refreshMinutes: Number(fields.refreshMinutes),
         };

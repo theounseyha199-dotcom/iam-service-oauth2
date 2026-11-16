@@ -86,9 +86,25 @@ export function recordSchema(kind, fresh) {
                 "validation.value",
             ),
             confidential: z.boolean().optional(),
-            grantTypes: requiredText(),
+            grantTypes: z
+                .array(
+                    z.enum([
+                        "authorization_code",
+                        "refresh_token",
+                        "client_credentials",
+                    ]),
+                )
+                .min(1, "validation.required")
+                .max(3),
             redirectUris: optionalText(),
-            scopes: requiredText(),
+            scopes: z
+                .array(
+                    z
+                        .string()
+                        .regex(/^[A-Za-z0-9_.:-]{1,100}$/, "validation.value"),
+                )
+                .min(1, "validation.required")
+                .max(30),
             accessMinutes: integer(1, 60),
             refreshMinutes: integer(5, 43200),
         })
@@ -96,6 +112,24 @@ export function recordSchema(kind, fresh) {
             (value) =>
                 !fresh || !value.confidential || Boolean(value.clientSecret),
             { message: "validation.required", path: ["clientSecret"] },
+        )
+        .refine(
+            (value) =>
+                !value.grantTypes.includes("refresh_token") ||
+                value.grantTypes.includes("authorization_code"),
+            { message: "validation.value", path: ["grantTypes"] },
+        )
+        .refine(
+            (value) =>
+                value.confidential ||
+                !value.grantTypes.includes("client_credentials"),
+            { message: "validation.value", path: ["grantTypes"] },
+        )
+        .refine(
+            (value) =>
+                !value.grantTypes.includes("authorization_code") ||
+                Boolean(value.redirectUris?.trim()),
+            { message: "validation.required", path: ["redirectUris"] },
         );
 }
 export function assignmentSchema(kind, target) {

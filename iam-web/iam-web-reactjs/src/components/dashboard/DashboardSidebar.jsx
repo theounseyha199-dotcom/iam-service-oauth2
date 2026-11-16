@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ShieldCheck, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { BrandLogo } from "@/components/BrandLogo";
 import { AppLink } from "@/components/AppLink";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Button } from "@/components/ui/button";
@@ -24,11 +25,10 @@ export function DashboardSidebar({ bootstrap, t, nav, admin, panel }) {
             <SidebarHeader>
                 <AppLink
                     href={url("/workspace")}
+                    aria-label={`ISTAD · ${t("identityAccess")}`}
                     className="dashboard-brand flex min-h-9 items-center gap-[.65rem] text-foreground"
                 >
-                    <span className="dashboard-monogram grid h-9 w-[34px] shrink-0 place-items-center rounded-[9px] bg-primary text-primary-foreground">
-                        <ShieldCheck aria-hidden="true" size={21} />
-                    </span>
+                    <BrandLogo className="size-9 group-data-[collapsible=icon]:size-8" />
                     <span className="dashboard-brand-copy grid gap-px whitespace-nowrap group-data-[collapsible=icon]:hidden [&_strong]:text-[15px] [&_strong]:font-extrabold [&_strong]:tracking-[.08em] [&>span]:text-[10px] [&>span]:text-slate-500">
                         <strong>ISTAD</strong>
                         <span>{t("identityAccess")}</span>
