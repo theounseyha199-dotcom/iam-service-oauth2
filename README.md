@@ -1,5 +1,10 @@
 # ISTAD IAM service
 
+The React dashboard implements **IV. Assignment - IAM Service _ Dashboard**:
+eight Account workflows and twelve Management workflows. See the current
+[dashboard verification checklist](docs/DASHBOARD-VERIFICATION.md) for coverage,
+test evidence, and configuration-dependent checks. Video delivery is outside this checklist.
+
 Implementation of **III. Assignment - Spring Authorization Server & IAM Service.pdf**,
 Sections A–F: core domain, application use cases, JPA persistence, REST API, Spring
 Authorization Server, social-login adapters, and English/Khmer React pages.
@@ -88,6 +93,16 @@ For a guided code review and expected API results, read the
 [reviewer guide](docs/REVIEWER-GUIDE.md).
 
 ## 2. Assignment walkthrough
+
+The owner's existing database is `jdbc:postgresql://localhost:9543/db_oauth2`.
+Its original core tables use a different Liquibase history from a fresh clone.
+The ignored `.env.local` and private IntelliJ configuration select
+`IAM_CHANGELOG=classpath:db/changelog/changes/changelog-legacy.yaml` for that database.
+This additive compatibility path preserves existing roles, permissions and clients,
+adds assignment revocation-reason columns, and installs the dashboard/recovery tables.
+Fresh databases use the normal changelog and setup above. Restart the IntelliJ run
+after changing its environment. Browser sessions whose user was deleted are cleared
+and redirected to login; workspace API requests receive 401.
 
 | Part | Implementation |
 | --- | --- |
@@ -249,11 +264,12 @@ Use this database only for tests. Creating it is needed once; if it already exis
 reuse only that disposable test database. Never point tests at `db_iam_service`.
 
 
-The optional `browserChecks` flag references `scripts/browser-check.mjs`, which is
-not included in the current working tree. Do not enable that flag in this checkout;
-the browser screenshots in `verification` are historical evidence, not a replacement
-for the current Java test results. Without the integration flag, `check` skips the
-database suites. The Gradle wrapper is included; no global Gradle install is needed.
+Enable `-PbrowserChecks=true` together with `-Ppart2Integration=true` to run
+`scripts/browser-check.mjs` and `scripts/workspace-check.mjs` against disposable test
+accounts. Chromium must be installed for Playwright. Screenshots in `verification`
+do not replace current test results. Without the integration flag, `check` skips the
+database suites unless `IAM_TEST_DB_URL` is supplied. The Gradle wrapper is included;
+no global Gradle install is needed.
 
 Earlier delivery evidence records **34 tests, 16 browser checks and 13 static contracts**;
 packaged JAR renders React pages outside the source tree. Browser screenshots

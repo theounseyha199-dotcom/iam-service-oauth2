@@ -1,0 +1,49 @@
+{
+  "scope": "Assignment IV Account A1-A8 and Management M1-M12; video excluded",
+  "command": "./gradlew check :iam-main:bootJar -Ppart2Integration=true -PbrowserChecks=true -PpackagedChecks=true",
+  "result": "BUILD SUCCESSFUL",
+  "junit": {
+    "tests": 70,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "browserSuites": {
+    "account": "passed",
+    "management": "passed"
+  },
+  "staticUiAudit": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "additionalChecks": [
+    "device and router unit checks passed",
+    "git diff --check passed"
+  ],
+  "remaining": [
+    "A3 live social-provider account consent and callback acceptance",
+    "A4 configure a real GeoIP dataset for public-IP locations"
+  ],
+  "liveGoogleAcceptance": {
+    "authorizationRedirect": "reached accounts.google.com using configured client",
+    "result": "blocked by Google browser security check",
+    "providerMessage": "This browser or app may not be secure.",
+    "passwordSubmitted": false,
+    "linkUnlinkAccepted": false,
+    "nextStep": "Complete Google sign-in and consent in a regular browser at http://localhost:9000/login"
+  },
+  "databaseConfiguration": {
+    "url": "jdbc:postgresql://localhost:9543/db_oauth2",
+    "changelog": "classpath:db/changelog/changes/changelog-legacy.yaml",
+    "adminUsername": "theounseyha",
+    "adminRole": "ADMIN",
+    "staleSessionRegression": "passed",
+    "legacySchemaAdoptionRegression": "passed",
+    "liveAdminBrowserCheck": {
+      "login": true,
+      "usersNavigation": true,
+      "policyNavigation": true,
+      "temporaryServerStopped": true
+    }
+  }
+}
