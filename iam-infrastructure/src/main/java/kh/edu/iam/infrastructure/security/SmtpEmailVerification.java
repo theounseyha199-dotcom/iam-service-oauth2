@@ -1,16 +1,17 @@
 package kh.edu.iam.infrastructure.security;
 
-import kh.edu.iam.application.port.out.EmailVerification;
-import kh.edu.iam.application.port.out.UserRepository;
-import kh.edu.iam.application.port.out.TransactionRunner;
-import kh.edu.iam.application.exception.ApplicationException;
-import org.springframework.stereotype.Service;
-import org.springframework.jdbc.core.JdbcTemplate;
-
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Locale;
 import java.util.UUID;
+
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+
+import kh.edu.iam.application.exception.ApplicationException;
+import kh.edu.iam.application.port.out.EmailVerification;
+import kh.edu.iam.application.port.out.TransactionRunner;
+import kh.edu.iam.application.port.out.UserRepository;
 
 @Service
 public class SmtpEmailVerification implements EmailVerification {
@@ -24,7 +25,7 @@ public class SmtpEmailVerification implements EmailVerification {
     private final SecureRandom random = new SecureRandom();
 
     public SmtpEmailVerification(UserRepository users, TransactionRunner transactions, JdbcTemplate jdbc,
-            RedisVerificationCodes codes, EmailService emailService, Clock clock) {
+                                 RedisVerificationCodes codes, EmailService emailService, Clock clock) {
         this.users = users;
         this.transactions = transactions;
         this.jdbc = jdbc;
@@ -33,29 +34,38 @@ public class SmtpEmailVerification implements EmailVerification {
         this.clock = clock;
     }
 
-    @Override public void enroll(UUID userUuid) {
+    @Override
+    public void enroll(UUID userUuid) {
         jdbc.update("INSERT INTO email_verification_required(user_uuid) VALUES (?)", userUuid);
     }
 
-    @Override public boolean isPending(UUID userUuid) {
+    @Override
+    public boolean isPending(UUID userUuid) {
         return Boolean.TRUE.equals(jdbc.queryForObject(
-                "SELECT EXISTS(SELECT 1 FROM email_verification_required v JOIN users u ON u.uuid=v.user_uuid WHERE u.uuid=? AND NOT u.email_verified)",
-                Boolean.class, userUuid));
+            "SELECT EXISTS(SELECT 1 FROM email_verification_required v JOIN users u ON u.uuid=v.user_uuid WHERE u.uuid=? AND NOT u.email_verified)",
+            Boolean.class, userUuid));
     }
 
-    @Override public void request(String email) {
+    @Override
+    public void request(String email) {
         // Registration has already committed. Redis/SMTP failures leave a recoverable pending account.
         try {
             String address = normalize(email);
             transactions.required(() -> {
                 var found = users.lockByUsernameOrEmail(address);
-                if (found.isEmpty()) return null;
+                if (found.isEmpty()) {
+                    return null;
+                }
                 var user = found.get();
                 if (!address.equals(user.getEmail()) || user.isEmailVerified()
-                        || !user.isEnabled() || user.getDeletion().deleted()) return null;
+                    || !user.isEnabled() || user.getDeletion().deleted()) {
+                    return null;
+                }
                 String code = String.format(Locale.ROOT, "%06d", random.nextInt(1_000_000));
                 String issuance = codes.issue(user.getUuid(), address, code);
-                if (issuance == null) return null;
+                if (issuance == null) {
+                    return null;
+                }
                 try {
                     emailService.sendVerificationCode(address, code);
                 } catch (RuntimeException ex) {
@@ -70,13 +80,20 @@ public class SmtpEmailVerification implements EmailVerification {
         }
     }
 
-    @Override public void verify(String email, String code) {
+    @Override
+    public void verify(String email, String code) {
         String address = normalize(email);
-        if (address.isEmpty()) throw invalid();
+        if (address.isEmpty()) {
+            throw invalid();
+        }
         transactions.required(() -> {
             var user = users.lockByUsernameOrEmail(address).orElseThrow(SmtpEmailVerification::invalid);
-            if (!address.equals(user.getEmail()) || user.getDeletion().deleted() || user.isEmailVerified()) throw invalid();
-            if (!codes.consume(user.getUuid(), address, code)) throw invalid();
+            if (!address.equals(user.getEmail()) || user.getDeletion().deleted() || user.isEmailVerified()) {
+                throw invalid();
+            }
+            if (!codes.consume(user.getUuid(), address, code)) {
+                throw invalid();
+            }
             // Verification never overrides an administrator's enabled/locked decision.
             user.verifyEmail("email-verification", clock.instant());
             users.save(user);
@@ -84,7 +101,10 @@ public class SmtpEmailVerification implements EmailVerification {
         });
     }
 
-    private static String normalize(String email) { return email == null ? "" : email.strip().toLowerCase(Locale.ROOT); }
+    private static String normalize(String email) {
+        return email == null ? "" : email.strip().toLowerCase(Locale.ROOT);
+    }
+
     private static ApplicationException invalid() {
         return new ApplicationException("invalid_verification_code", "Verification code is invalid or expired");
     }

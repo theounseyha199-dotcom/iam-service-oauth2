@@ -1,23 +1,21 @@
 package kh.edu.iam.web.controller;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import jakarta.servlet.http.HttpServletResponse;
-
-import kh.edu.iam.application.user.command.RegisterUserCommand;
-import kh.edu.iam.application.user.usecase.RegisterUserUseCase;
-import kh.edu.iam.domain.rule.Checks;
-import kh.edu.iam.web.view.Forms;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import kh.edu.iam.application.user.command.RegisterUserCommand;
+import kh.edu.iam.application.user.usecase.RegisterUserUseCase;
+import kh.edu.iam.domain.rule.Checks;
+import kh.edu.iam.web.view.Forms;
 
 @Controller
 @RequiredArgsConstructor
@@ -33,7 +31,8 @@ public class RegistrationPageController {
     }
 
     @PostMapping("/register")
-    public String register(@RequestParam Map<String, String> values, Model model, HttpServletResponse response, jakarta.servlet.http.HttpServletRequest request) {
+    public String register(@RequestParam Map<String, String> values, Model model, HttpServletResponse response,
+                           jakarta.servlet.http.HttpServletRequest request) {
         var errors = new LinkedHashMap<String, String>();
         for (String key : List.of("username", "email", "givenName", "familyName", "password", "confirmPassword")) {
             if (values.getOrDefault(key, "").isBlank()) {
@@ -55,24 +54,24 @@ public class RegistrationPageController {
         }
         try {
             kh.edu.iam.application.common.PasswordPolicy.validate(
-                    values.get("password"), values.get("confirmPassword"));
+                values.get("password"), values.get("confirmPassword"));
         } catch (IllegalArgumentException | NullPointerException ex) {
             boolean mismatch = !java.util.Objects.equals(values.get("password"), values.get("confirmPassword"));
             errors.put(
-                    mismatch ? "confirmPassword" : "password", mismatch ? "validation.confirm" : "validation.password");
+                mismatch ? "confirmPassword" : "password", mismatch ? "validation.confirm" : "validation.password");
         }
         String error = "validation";
         if (errors.isEmpty()) {
             try {
                 var user = register.execute(
-                        new RegisterUserCommand(
-                                values.get("username"),
-                                values.get("email"),
-                                values.get("password"),
-                                values.get("confirmPassword"),
-                                values.get("givenName"),
-                                values.get("familyName"),
-                                values.getOrDefault("locale", "en")));
+                    new RegisterUserCommand(
+                        values.get("username"),
+                        values.get("email"),
+                        values.get("password"),
+                        values.get("confirmPassword"),
+                        values.get("givenName"),
+                        values.get("familyName"),
+                        values.getOrDefault("locale", "en")));
                 request.getSession().setAttribute("verificationEmail", user.email());
                 return "redirect:/verify-email";
             } catch (RuntimeException ex) {

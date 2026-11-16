@@ -1,9 +1,14 @@
 package co.istad.iam;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import kh.edu.iam.IdentityProvider;
-import kh.edu.iam.infrastructure.federation.ProviderIdentityMapper;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,9 +17,8 @@ import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
+import kh.edu.iam.IdentityProvider;
+import kh.edu.iam.infrastructure.federation.ProviderIdentityMapper;
 
 class ProviderIdentityMapperTest {
     private final ProviderIdentityMapper mapper = new ProviderIdentityMapper();
@@ -22,18 +26,18 @@ class ProviderIdentityMapperTest {
 
     private DefaultOidcUser oidc(String issuer) {
         var token =
-                OidcIdToken.withTokenValue("unit-test-provider-token")
-                        .issuedAt(Instant.now())
-                        .expiresAt(Instant.now().plusSeconds(60))
-                        .subject("provider-subject")
-                        .issuer(issuer)
-                        .claim("email", "dara@example.com")
-                        .claim("email_verified", true)
-                        .claim("given_name", "Dara")
-                        .claim("family_name", "Sok")
-                        .claim("access_token", "must-not-persist")
-                        .claim("roles", List.of("ADMIN"))
-                        .build();
+            OidcIdToken.withTokenValue("unit-test-provider-token")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(60))
+                .subject("provider-subject")
+                .issuer(issuer)
+                .claim("email", "dara@example.com")
+                .claim("email_verified", true)
+                .claim("given_name", "Dara")
+                .claim("family_name", "Sok")
+                .claim("access_token", "must-not-persist")
+                .claim("roles", List.of("ADMIN"))
+                .build();
         return new DefaultOidcUser(authorities, token);
     }
 
@@ -62,13 +66,13 @@ class ProviderIdentityMapperTest {
     void telegramUsesItsOwnIssuerAndSubject() {
         assertEquals(IdentityProvider.TELEGRAM, mapper.map("telegram", oidc("https://oauth.telegram.org")).provider());
         assertThrows(
-                OAuth2AuthenticationException.class, () -> mapper.map("telegram", oidc("https://accounts.google.com")));
+            OAuth2AuthenticationException.class, () -> mapper.map("telegram", oidc("https://accounts.google.com")));
     }
 
     @Test
     void githubUsesNumericProviderIdAndDoesNotInventVerifiedEmailOrNames() {
         var result =
-                mapper.map("github", new DefaultOAuth2User(authorities, Map.of("id", 12345L, "login", "dara"), "id"));
+            mapper.map("github", new DefaultOAuth2User(authorities, Map.of("id", 12345L, "login", "dara"), "id"));
         assertEquals("12345", result.providerSubject());
         assertNull(result.email());
         assertNull(result.givenName());
@@ -79,20 +83,20 @@ class ProviderIdentityMapperTest {
     @Test
     void facebookUsesItsAuthenticatedIdAndExplicitNameFields() {
         var result =
-                mapper.map(
-                        "facebook",
-                        new DefaultOAuth2User(
-                                authorities,
-                                Map.of(
-                                        "id",
-                                        "fb-123",
-                                        "first_name",
-                                        "Dara",
-                                        "last_name",
-                                        "Sok",
-                                        "email",
-                                        "dara@example.com"),
-                                "id"));
+            mapper.map(
+                "facebook",
+                new DefaultOAuth2User(
+                    authorities,
+                    Map.of(
+                        "id",
+                        "fb-123",
+                        "first_name",
+                        "Dara",
+                        "last_name",
+                        "Sok",
+                        "email",
+                        "dara@example.com"),
+                    "id"));
         assertEquals("fb-123", result.providerSubject());
         assertEquals("Dara", result.givenName());
         assertFalse(result.emailVerified());
@@ -101,6 +105,6 @@ class ProviderIdentityMapperTest {
     @Test
     void unknownProvidersAreRejected() {
         assertThrows(
-                OAuth2AuthenticationException.class, () -> mapper.map("unknown", oidc("https://accounts.google.com")));
+            OAuth2AuthenticationException.class, () -> mapper.map("unknown", oidc("https://accounts.google.com")));
     }
 }

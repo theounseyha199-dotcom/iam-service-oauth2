@@ -1,7 +1,11 @@
 package kh.edu.iam.restapi.dto;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
+import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
@@ -10,20 +14,25 @@ import jakarta.validation.constraints.Size;
 import kh.edu.iam.application.user.command.ProfilePatch;
 import kh.edu.iam.application.user.command.UpdateUserProfileCommand;
 
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
 public final class ProfileRequest implements Requests.Strict {
     @jakarta.validation.constraints.Min(0)
     private Long version;
-    @JsonSetter("version") public void setVersion(Long value) { version=value; }
+
+    @JsonSetter("version")
+    public void setVersion(Long value) {
+        version = value;
+    }
+
     private final Set<String> supplied = new HashSet<>();
 
     @Size(min = 1, max = 50)
     private String username;
-    @JsonSetter("username") public void setUsername(String value) { supplied.add("username"); username=value; }
+
+    @JsonSetter("username")
+    public void setUsername(String value) {
+        supplied.add("username");
+        username = value;
+    }
 
     @Email
     @Size(max = 255)
@@ -142,7 +151,8 @@ public final class ProfileRequest implements Requests.Strict {
         phoneNumber = value;
     }
 
-    @Valid private Requests.AddressInput address;
+    @Valid
+    private Requests.AddressInput address;
 
     @JsonSetter("address")
     public void setAddress(Requests.AddressInput value) {
@@ -152,7 +162,9 @@ public final class ProfileRequest implements Requests.Strict {
 
     public UpdateUserProfileCommand command(UUID uuid) {
         var patch = ProfilePatch.builder();
-        if (supplied.contains("username")) patch.username(username);
+        if (supplied.contains("username")) {
+            patch.username(username);
+        }
         if (supplied.contains("email")) {
             patch.email(email);
         }

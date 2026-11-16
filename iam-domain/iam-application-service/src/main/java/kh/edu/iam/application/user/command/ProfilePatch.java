@@ -1,30 +1,30 @@
 package kh.edu.iam.application.user.command;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Objects;
+
 import kh.edu.iam.Address;
 import kh.edu.iam.User;
 import kh.edu.iam.UserProfile;
 import kh.edu.iam.application.common.FieldUpdate;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Objects;
-
 public record ProfilePatch(
-        FieldUpdate<String> username,
-        FieldUpdate<String> email,
-        FieldUpdate<String> givenName,
-        FieldUpdate<String> familyName,
-        FieldUpdate<String> middleName,
-        FieldUpdate<String> nickname,
-        FieldUpdate<String> gender,
-        FieldUpdate<LocalDate> birthdate,
-        FieldUpdate<String> profileUrl,
-        FieldUpdate<String> pictureUrl,
-        FieldUpdate<String> websiteUrl,
-        FieldUpdate<String> zoneinfo,
-        FieldUpdate<String> locale,
-        FieldUpdate<String> phoneNumber,
-        FieldUpdate<Address> address) {
+    FieldUpdate<String> username,
+    FieldUpdate<String> email,
+    FieldUpdate<String> givenName,
+    FieldUpdate<String> familyName,
+    FieldUpdate<String> middleName,
+    FieldUpdate<String> nickname,
+    FieldUpdate<String> gender,
+    FieldUpdate<LocalDate> birthdate,
+    FieldUpdate<String> profileUrl,
+    FieldUpdate<String> pictureUrl,
+    FieldUpdate<String> websiteUrl,
+    FieldUpdate<String> zoneinfo,
+    FieldUpdate<String> locale,
+    FieldUpdate<String> phoneNumber,
+    FieldUpdate<Address> address) {
 
     public ProfilePatch {
         username = FieldUpdate.normalize(username);
@@ -56,25 +56,27 @@ public record ProfilePatch(
         boolean verified = Objects.equals(phone, previous.phoneNumber()) && previous.phoneNumberVerified();
 
         var changed =
-                new UserProfile(
-                        givenName.orElse(previous.givenName()),
-                        familyName.orElse(previous.familyName()),
-                        middleName.orElse(previous.middleName()),
-                        nickname.orElse(previous.nickname()),
-                        gender.orElse(previous.gender()),
-                        birthdate.orElse(previous.birthdate()),
-                        profileUrl.orElse(previous.profileUrl()),
-                        pictureUrl.orElse(previous.pictureUrl()),
-                        websiteUrl.orElse(previous.websiteUrl()),
-                        zoneinfo.orElse(previous.zoneinfo()),
-                        locale.orElse(previous.locale()),
-                        phone,
-                        verified,
-                        address.orElse(previous.address()));
+            new UserProfile(
+                givenName.orElse(previous.givenName()),
+                familyName.orElse(previous.familyName()),
+                middleName.orElse(previous.middleName()),
+                nickname.orElse(previous.nickname()),
+                gender.orElse(previous.gender()),
+                birthdate.orElse(previous.birthdate()),
+                profileUrl.orElse(previous.profileUrl()),
+                pictureUrl.orElse(previous.pictureUrl()),
+                websiteUrl.orElse(previous.websiteUrl()),
+                zoneinfo.orElse(previous.zoneinfo()),
+                locale.orElse(previous.locale()),
+                phone,
+                verified,
+                address.orElse(previous.address()));
 
         user.updateProfile(changed, actor, now);
 
-        if (username.supplied()) user.changeUsername(username.value(), actor, now);
+        if (username.supplied()) {
+            user.changeUsername(username.value(), actor, now);
+        }
         if (email.supplied()) {
             user.changeEmail(email.value(), actor, now);
         }
@@ -99,7 +101,10 @@ public record ProfilePatch(
         private FieldUpdate<String> phoneNumber = FieldUpdate.unchanged();
         private FieldUpdate<Address> address = FieldUpdate.unchanged();
 
-        public Builder username(String value) { username = FieldUpdate.set(value); return this; }
+        public Builder username(String value) {
+            username = FieldUpdate.set(value);
+            return this;
+        }
 
         public Builder email(String value) {
             email = FieldUpdate.set(value);
@@ -173,21 +178,21 @@ public record ProfilePatch(
 
         public ProfilePatch build() {
             return new ProfilePatch(
-                    username,
-                    email,
-                    givenName,
-                    familyName,
-                    middleName,
-                    nickname,
-                    gender,
-                    birthdate,
-                    profileUrl,
-                    pictureUrl,
-                    websiteUrl,
-                    zoneinfo,
-                    locale,
-                    phoneNumber,
-                    address);
+                username,
+                email,
+                givenName,
+                familyName,
+                middleName,
+                nickname,
+                gender,
+                birthdate,
+                profileUrl,
+                pictureUrl,
+                websiteUrl,
+                zoneinfo,
+                locale,
+                phoneNumber,
+                address);
         }
     }
 }

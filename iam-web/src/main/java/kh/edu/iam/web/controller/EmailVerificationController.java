@@ -1,21 +1,30 @@
 package kh.edu.iam.web.controller;
 
-import kh.edu.iam.application.port.out.EmailVerification;
-import kh.edu.iam.application.exception.ApplicationException;
+import java.util.Locale;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import java.util.Locale;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import kh.edu.iam.application.exception.ApplicationException;
+import kh.edu.iam.application.port.out.EmailVerification;
 
 @Controller
 public class EmailVerificationController {
     private final EmailVerification verification;
-    public EmailVerificationController(EmailVerification verification) { this.verification = verification; }
+
+    public EmailVerificationController(EmailVerification verification) {
+        this.verification = verification;
+    }
 
     @GetMapping("/registration-pending")
-    public String pending() { return "redirect:/verify-email"; }
+    public String pending() {
+        return "redirect:/verify-email";
+    }
 
     @GetMapping("/resend-verification")
     public String resendForm(HttpServletRequest request, Model model, HttpServletResponse response) {
@@ -25,25 +34,32 @@ public class EmailVerificationController {
     }
 
     @PostMapping("/resend-verification")
-    public String resend(@RequestParam(name="email", defaultValue="") String email,
-            HttpServletRequest request, HttpServletResponse response, Model model) {
+    public String resend(@RequestParam(name = "email", defaultValue = "") String email,
+                         HttpServletRequest request, HttpServletResponse response, Model model) {
         initialize(request, response, model);
         email = email.strip().toLowerCase(Locale.ROOT);
         model.addAttribute("email", email);
         model.addAttribute("sent", false);
-        try { kh.edu.iam.domain.rule.Checks.email(email); }
-        catch (RuntimeException ex) {
-            response.setStatus(400); model.addAttribute("errorCode", "validation"); return "registration-pending";
+        try {
+            kh.edu.iam.domain.rule.Checks.email(email);
+        } catch (RuntimeException ex) {
+            response.setStatus(400);
+            model.addAttribute("errorCode", "validation");
+            return "registration-pending";
         }
         var session = request.getSession();
         boolean allowed;
         synchronized (session) {
             Long previous = (Long) session.getAttribute("verificationRequestedAt");
             allowed = previous == null || System.currentTimeMillis() - previous >= 60000;
-            if (allowed) session.setAttribute("verificationRequestedAt", System.currentTimeMillis());
+            if (allowed) {
+                session.setAttribute("verificationRequestedAt", System.currentTimeMillis());
+            }
             session.setAttribute("verificationEmail", email);
         }
-        if (allowed) verification.request(email);
+        if (allowed) {
+            verification.request(email);
+        }
         // Identical feedback whether an account exists, is verified, or is throttled.
         model.addAttribute("sent", true);
         return "registration-pending";
@@ -56,9 +72,9 @@ public class EmailVerificationController {
     }
 
     @PostMapping("/verify-email")
-    public String verify(@RequestParam(name="email", defaultValue="") String email,
-            @RequestParam(name="code", defaultValue="") String code,
-            HttpServletRequest request, HttpServletResponse response, Model model) {
+    public String verify(@RequestParam(name = "email", defaultValue = "") String email,
+                         @RequestParam(name = "code", defaultValue = "") String code,
+                         HttpServletRequest request, HttpServletResponse response, Model model) {
         initialize(request, response, model);
         email = email.strip().toLowerCase(Locale.ROOT);
         model.addAttribute("email", email);
@@ -67,9 +83,11 @@ public class EmailVerificationController {
             request.getSession().removeAttribute("verificationEmail");
             model.addAttribute("done", true);
         } catch (ApplicationException ex) {
-            response.setStatus(400); model.addAttribute("errorCode", ex.code());
+            response.setStatus(400);
+            model.addAttribute("errorCode", ex.code());
         } catch (RuntimeException ex) {
-            response.setStatus(503); model.addAttribute("errorCode", "generic");
+            response.setStatus(503);
+            model.addAttribute("errorCode", "generic");
         }
         // Never echo the submitted code into the React bootstrap.
         return "verify-email";
